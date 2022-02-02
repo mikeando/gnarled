@@ -1,5 +1,3 @@
-#![feature(trait_alias)]
-
 pub mod point3d;
 pub mod svg;
 
