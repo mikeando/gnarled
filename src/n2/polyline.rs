@@ -1,7 +1,7 @@
+use crate::n2::bounds::Bounds;
+use crate::n2::lineset::LineSet;
 use crate::n2::point::Point;
 use crate::n2::traits::*;
-use crate::n2::lineset::LineSet;
-use crate::n2::bounds::Bounds;
 
 #[derive(Clone)]
 pub struct PolyLine {
@@ -78,32 +78,30 @@ impl Boundable for PolyLine {
 
 impl Shiftable for PolyLine {
     type Result = PolyLine;
-    fn shift_by(&self, Point(dx, dy): Point) -> PolyLine {
+    fn shift_by(&self, d: Point) -> PolyLine {
         PolyLine {
-            ps: self
-                .ps
-                .iter()
-                .map(|Point(x, y)| Point(x + dx, y + dy))
-                .collect(),
+            ps: self.ps.iter().map(|p| *p + d).collect(),
         }
     }
 }
 
 impl Rotatable for PolyLine {
     type Result = PolyLine;
-    fn rotate_by(&self, radians: f32, Point(cx, cy): Point) -> PolyLine {
+    fn rotate_by(&self, radians: f32, Point { vs: [cx, cy] }: Point) -> PolyLine {
         PolyLine {
             ps: self
                 .ps
                 .iter()
-                .map(|Point(x, y)| {
+                .map(|Point { vs: [x, y] }| {
                     let xx = x - cx;
                     let yy = y - cy;
                     let c = radians.cos();
                     let s = radians.sin();
                     let rx = c * xx + s * yy;
                     let ry = -s * xx + c * yy;
-                    Point(rx + cx, ry + cy)
+                    Point {
+                        vs: [rx + cx, ry + cy],
+                    }
                 })
                 .collect(),
         }
@@ -113,12 +111,14 @@ impl Rotatable for PolyLine {
 impl Scalable for PolyLine {
     type Result = PolyLine;
 
-    fn scale(&self, Point(cx, cy): Point, (sx, sy): (f32, f32)) -> Self::Result {
+    fn scale(&self, Point { vs: [cx, cy] }: Point, (sx, sy): (f32, f32)) -> Self::Result {
         PolyLine {
             ps: self
                 .ps
                 .iter()
-                .map(|Point(x, y)| Point(sx * (x - cx) + cx, sy * (y - cy) + cy))
+                .map(|Point { vs: [x, y] }| Point {
+                    vs: [sx * (x - cx) + cx, sy * (y - cy) + cy],
+                })
                 .collect(),
         }
     }

@@ -1,5 +1,5 @@
-use crate::n2::point::Point;
 use crate::n2::bounds::Bounds;
+use crate::n2::point::Point;
 
 pub trait Boundable {
     fn bounds(&self) -> Option<Bounds>;

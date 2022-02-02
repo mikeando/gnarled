@@ -1,11 +1,13 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
-use crate::n2::point::Point;
 use crate::n2::bounds::Bounds;
 use crate::n2::lineset::LineSet;
+use crate::n2::point::Point;
 use crate::n2::polyline::PolyLine;
 use crate::svg::SVGable;
+
+use crate::n2::point::p2;
 
 pub trait Mask {
     fn mask(&self, p: Point) -> f32;
@@ -49,22 +51,26 @@ pub fn clip_by_mask(lsx: LineSegment, mask: &dyn Mask) -> LineSet {
     // subdivide the line-segment if large.
     let m0 = mask.mask(lsx.0);
     let m1 = mask.mask(lsx.1);
-    if (m0>=0.0) && (m1>=0.0) {
+    if (m0 >= 0.0) && (m1 >= 0.0) {
         LineSet {
             lines: vec![PolyLine {
                 ps: vec![lsx.0, lsx.1],
             }],
         }
-    } else if (m0<0.0) && (m1<0.0) {
-        LineSet{ lines:vec![] }
-    } else if m0>=0.0 {
-        let z = -m0 / (m1-m0);
+    } else if (m0 < 0.0) && (m1 < 0.0) {
+        LineSet { lines: vec![] }
+    } else if m0 >= 0.0 {
+        let z = -m0 / (m1 - m0);
         let p = Point::lerp(z, lsx.0, lsx.1);
-        LineSet{ lines:vec![PolyLine {ps:vec![lsx.0, p]}]}
+        LineSet {
+            lines: vec![PolyLine { ps: vec![lsx.0, p] }],
+        }
     } else {
-        let z = -m0 / (m1-m0);
+        let z = -m0 / (m1 - m0);
         let p = Point::lerp(z, lsx.0, lsx.1);
-        LineSet{ lines:vec![PolyLine {ps:vec![p, lsx.1]}]}
+        LineSet {
+            lines: vec![PolyLine { ps: vec![p, lsx.1] }],
+        }
     }
 }
 
@@ -79,18 +85,22 @@ impl LineSegment {
 impl Shading for ShadingV0 {
     fn apply(&self, obj: &dyn Shadable, consumer: &mut dyn Consumer) {
         let bounds = obj.bounds();
-        let ix_min = ((bounds.min.0 - self.anchor.0) / self.d.0).floor() as i32;
-        let ix_max = ((bounds.max.0 - self.anchor.0) / self.d.0).ceil() as i32;
+        let s = self.d.map(|x| 1.0f32 / x);
+        let i_min = (bounds.min - self.anchor) * s;
+        let i_max = (bounds.max - self.anchor) * s;
 
-        let iy_min = ((bounds.min.1 - self.anchor.1) / self.d.1).floor() as i32;
-        let iy_max = ((bounds.max.1 - self.anchor.1) / self.d.1).ceil() as i32;
+        let ix_min = i_min.vs[0].floor() as i32;
+        let ix_max = i_max.vs[0].ceil() as i32;
+
+        let iy_min = i_min.vs[1].floor() as i32;
+        let iy_max = i_max.vs[1].ceil() as i32;
 
         // Now we generate a lot of line-segments.
         for iy in iy_min..=iy_max {
             for ix in ix_min..=ix_max {
-                let p0 = self.anchor + self.d * (ix as f32, iy as f32);
-                let px = p0 + self.d * (1.0, 0.0);
-                let py = p0 + self.d * (0.0, 1.0);
+                let p0 = self.anchor + self.d * p2(ix as f32, iy as f32);
+                let px = p0 + self.d * p2(1.0, 0.0);
+                let py = p0 + self.d * p2(0.0, 1.0);
 
                 let lsx = LineSegment(p0, px);
                 let lsx = bounds.clip(lsx);
@@ -126,8 +136,8 @@ pub struct DefaultHasherRandField2D {}
 impl RandomField2D for DefaultHasherRandField2D {
     fn at(&self, p: Point) -> f32 {
         let mut h = DefaultHasher::new();
-        h.write(&p.0.to_be_bytes());
-        h.write(&p.1.to_be_bytes());
+        h.write(&p.vs[0].to_be_bytes());
+        h.write(&p.vs[1].to_be_bytes());
         let v = h.finish();
         // We use a resolution of 4096 values
         let v = v % 4096;
@@ -150,7 +160,7 @@ impl Shadable for AxisAlignedQuad {
     }
 
     fn weight(&self, p: Point) -> f32 {
-        (p.0 - (self.0).0) / ((self.1).0 - (self.0).0)
+        (p.vs[0] - (self.0).vs[0]) / ((self.1).vs[0] - (self.0).vs[0])
     }
 }
 
@@ -164,16 +174,16 @@ impl Mask for AxisAlignedQuad {
 }
 
 pub struct Circle {
-    pub center: Point, 
+    pub center: Point,
     pub radius: f32,
-    pub shading: Box<dyn Fn(Point)->f32>,
+    pub shading: Box<dyn Fn(Point) -> f32>,
 }
 
 impl Shadable for Circle {
     fn bounds(&self) -> Bounds {
         Bounds {
-            min: self.center - Point(1.0,1.0) * self.radius,
-            max: self.center + Point(1.0,1.0) * self.radius,
+            min: self.center - Point { vs: [1.0, 1.0] } * self.radius,
+            max: self.center + Point { vs: [1.0, 1.0] } * self.radius,
         }
     }
 
@@ -182,7 +192,7 @@ impl Shadable for Circle {
     }
 
     fn weight(&self, p: Point) -> f32 {
-        (self.shading)((p-self.center)*(1.0/self.radius))
+        (self.shading)((p - self.center) * (1.0 / self.radius))
     }
 }
 
@@ -192,7 +202,7 @@ impl Mask for Circle {
         let radius = self.radius;
         let d = p - center;
         let d2 = d.dot(d);
-        radius*radius - d2
+        radius * radius - d2
     }
 }
 

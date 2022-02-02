@@ -1,6 +1,6 @@
-use crate::n2::polyline::PolyLine;
-use crate::n2::point::Point;
 use crate::n2::bounds::Bounds;
+use crate::n2::point::Point;
+use crate::n2::polyline::PolyLine;
 use crate::n2::traits::*;
 
 #[derive(Clone)]

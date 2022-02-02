@@ -41,16 +41,7 @@ impl CubicBezierSegment {
         let mt = 1.0 - t;
         let mt2 = mt * mt;
         let mt3 = mt2 * mt;
-        Point(
-            self.ps[0].0 * mt3
-                + 3.0 * self.ps[1].0 * mt2 * t
-                + 3.0 * self.ps[2].0 * mt * t2
-                + self.ps[3].0 * t3,
-            self.ps[0].1 * mt3
-                + 3.0 * self.ps[1].1 * mt2 * t
-                + 3.0 * self.ps[2].1 * mt * t2
-                + self.ps[3].1 * t3,
-        )
+        self.ps[0] * mt3 + self.ps[1] * 3.0 * mt2 * t + self.ps[2] * 3.0 * mt * t2 + self.ps[3] * t3
     }
 }
 
@@ -73,9 +64,9 @@ impl CubicBezierPath {
 impl Shiftable for CubicBezierPath {
     type Result = CubicBezierPath;
 
-    fn shift_by(&self, Point(dx, dy): Point) -> Self::Result {
+    fn shift_by(&self, d: Point) -> Self::Result {
         CubicBezierPath {
-            ps: self.ps.iter().map(|p| Point(p.0 + dx, p.1 + dy)).collect(),
+            ps: self.ps.iter().map(|p| *p + d).collect(),
         }
     }
 }
@@ -83,9 +74,9 @@ impl Shiftable for CubicBezierPath {
 impl Shiftable for CubicBezierSegment {
     type Result = CubicBezierSegment;
 
-    fn shift_by(&self, Point(dx, dy): Point) -> Self::Result {
+    fn shift_by(&self, d: Point) -> Self::Result {
         CubicBezierSegment {
-            ps: self.ps.map(|p| Point(p.0 + dx, p.1 + dy)),
+            ps: self.ps.map(|p| p + d),
         }
     }
 }

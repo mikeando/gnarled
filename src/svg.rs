@@ -1,8 +1,6 @@
 use std::fmt::Display;
 
-use crate::{
-    n2::{cubic_bezier::CubicBezierPath, polyline::PolyLine, lineset::LineSet},
-};
+use crate::n2::{cubic_bezier::CubicBezierPath, lineset::LineSet, polyline::PolyLine};
 
 pub trait SVGable {
     fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
@@ -28,10 +26,14 @@ impl CubicBezierPath {
             r#"<path stroke="{}" fill="transparent" d=""#,
             props.stroke
         )?;
-        writeln!(w, "M {},{}", self.ps[0].0, self.ps[0].1)?;
+        writeln!(w, "M {},{}", self.ps[0].vs[0], self.ps[0].vs[1])?;
         for n in 0..(self.ps.len() - 1) / 3 {
             if let [_x, c1, c2, y] = self.ps[3 * n..3 * n + 4] {
-                writeln!(w, "C {} {}, {} {}, {} {}", c1.0, c1.1, c2.0, c2.1, y.0, y.1)?;
+                writeln!(
+                    w,
+                    "C {} {}, {} {}, {} {}",
+                    c1.vs[0], c1.vs[1], c2.vs[0], c2.vs[1], y.vs[0], y.vs[1]
+                )?;
             }
         }
         writeln!(w, r#""/>"#)?;
@@ -94,9 +96,9 @@ impl PolyLine {
             r#"<path stroke="{}" fill="transparent" d=""#,
             props.stroke
         )?;
-        writeln!(w, "M {},{}", self.ps[0].0, self.ps[0].1)?;
+        writeln!(w, "M {},{}", self.ps[0].vs[0], self.ps[0].vs[1])?;
         for pp in &self.ps[1..] {
-            writeln!(w, "L {},{}", pp.0, pp.1)?;
+            writeln!(w, "L {},{}", pp.vs[0], pp.vs[1])?;
         }
         writeln!(w, r#""/>"#)?;
 
