@@ -1,7 +1,7 @@
 use crate::n2::bounds::Bounds;
 use crate::n2::point::Point;
 use crate::n2::polyline::PolyLine;
-use crate::n2::traits::*;
+use crate::nbase::traits::*;
 
 #[derive(Clone)]
 pub struct LineSet {
@@ -20,7 +20,7 @@ impl LineSet {
     }
 }
 
-impl Boundable for LineSet {
+impl Boundable<2> for LineSet {
     fn bounds(&self) -> Option<Bounds> {
         self.lines
             .iter()
@@ -29,7 +29,7 @@ impl Boundable for LineSet {
     }
 }
 
-impl Shiftable for LineSet {
+impl Shiftable<2> for LineSet {
     type Result = LineSet;
     fn shift_by(&self, d: Point) -> Self::Result {
         LineSet {
@@ -38,9 +38,9 @@ impl Shiftable for LineSet {
     }
 }
 
-impl Scalable for LineSet {
+impl Scalable<2> for LineSet {
     type Result = LineSet;
-    fn scale(&self, center: Point, scalexy: (f32, f32)) -> Self::Result {
+    fn scale(&self, center: Point, scalexy: &[f32; 2]) -> Self::Result {
         LineSet {
             lines: self
                 .lines

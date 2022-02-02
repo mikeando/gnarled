@@ -1,12 +1,15 @@
+#![feature(trait_alias)]
+
 pub mod point3d;
 pub mod svg;
 
 pub mod n2;
 pub mod nbase;
 
+use n2::lineset::LineSet;
 use n2::polyline::PolyLine;
-use n2::traits::*;
-use n2::{lineset::LineSet, point::Point};
+use n2::traits::Rotatable;
+use nbase::traits::*;
 
 use svg::SVGable;
 

@@ -2,6 +2,7 @@ use crate::n2::bounds::Bounds;
 use crate::n2::lineset::LineSet;
 use crate::n2::point::Point;
 use crate::n2::traits::*;
+use crate::nbase::traits::*;
 
 #[derive(Clone)]
 pub struct PolyLine {
@@ -70,13 +71,13 @@ impl PolyLine {
     }
 }
 
-impl Boundable for PolyLine {
+impl Boundable<2> for PolyLine {
     fn bounds(&self) -> Option<Bounds> {
         self.ps.iter().fold(None, crate::n2::point::point_extrema)
     }
 }
 
-impl Shiftable for PolyLine {
+impl Shiftable<2> for PolyLine {
     type Result = PolyLine;
     fn shift_by(&self, d: Point) -> PolyLine {
         PolyLine {
@@ -108,10 +109,10 @@ impl Rotatable for PolyLine {
     }
 }
 
-impl Scalable for PolyLine {
+impl Scalable<2> for PolyLine {
     type Result = PolyLine;
 
-    fn scale(&self, Point { vs: [cx, cy] }: Point, (sx, sy): (f32, f32)) -> Self::Result {
+    fn scale(&self, Point { vs: [cx, cy] }: Point, [sx, sy]: &[f32; 2]) -> Self::Result {
         PolyLine {
             ps: self
                 .ps

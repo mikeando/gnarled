@@ -1,4 +1,5 @@
 use crate::nbase::point::Point;
+use crate::nbase::traits::Shiftable;
 
 pub struct CubicBezierSegment<const N: usize> {
     pub ps: [Point<N>; 4],
@@ -56,6 +57,26 @@ impl<const N: usize> CubicBezierPath<N> {
         let ps = &self.ps[3 * n..3 * n + 4];
         CubicBezierSegment {
             ps: [ps[0], ps[1], ps[2], ps[3]],
+        }
+    }
+}
+
+impl<const N: usize> Shiftable<N> for CubicBezierPath<N> {
+    type Result = CubicBezierPath<N>;
+
+    fn shift_by(&self, d: Point<N>) -> Self::Result {
+        CubicBezierPath {
+            ps: self.ps.iter().map(|p| *p + d).collect(),
+        }
+    }
+}
+
+impl<const N: usize> Shiftable<N> for CubicBezierSegment<N> {
+    type Result = CubicBezierSegment<N>;
+
+    fn shift_by(&self, d: Point<N>) -> Self::Result {
+        CubicBezierSegment {
+            ps: self.ps.map(|p| p + d),
         }
     }
 }

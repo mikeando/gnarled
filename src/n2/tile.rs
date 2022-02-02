@@ -1,5 +1,6 @@
+use crate::n2::point::p2;
 use crate::n2::{lineset::LineSet, point::Point};
-use crate::n2::{point::p2, traits::*};
+use crate::nbase::traits::*;
 
 #[derive(Clone)]
 pub struct Tile {
@@ -24,27 +25,27 @@ impl Tile {
         let tile_bounds = self.bounds;
         let z = self.lines.shift_by(tile_bounds.0.neg());
         let w = tile_bounds.1 - tile_bounds.0;
-        let z = z.scale(Point::default(), (dx / w.vs[0], dy / w.vs[1]));
+        let z = z.scale(Point::default(), &[dx / w.vs[0], dy / w.vs[1]]);
         z.shift_by(p)
     }
     pub fn flip_x(&self) -> Tile {
         let mid = Point::lerp(0.5, self.bounds.0, self.bounds.1);
         Tile {
-            lines: self.lines.scale(mid, (-1.0, 1.0)),
+            lines: self.lines.scale(mid, &[-1.0, 1.0]),
             bounds: self.bounds,
         }
     }
     pub fn flip_y(&self) -> Tile {
         let mid = Point::lerp(0.5, self.bounds.0, self.bounds.1);
         Tile {
-            lines: self.lines.scale(mid, (1.0, -1.0)),
+            lines: self.lines.scale(mid, &[1.0, -1.0]),
             bounds: self.bounds,
         }
     }
     pub fn flip_xy(&self) -> Tile {
         let mid = Point::lerp(0.5, self.bounds.0, self.bounds.1);
         Tile {
-            lines: self.lines.scale(mid, (-1.0, -1.0)),
+            lines: self.lines.scale(mid, &[-1.0, -1.0]),
             bounds: self.bounds,
         }
     }
