@@ -1,5 +1,7 @@
 use std::ops::{Add, Mul, Sub};
 
+use crate::nbase::bounds::Bounds;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Point<const N: usize> {
     pub vs: [f32; N],
@@ -103,6 +105,14 @@ impl<const N: usize> Point<N> {
     pub fn from(vs: [f32; N]) -> Point<N> {
         Point { vs }
     }
+
+    fn componentwise_min(a: Point<N>, b: Point<N>) -> Point<N> {
+        Point::bimap(a, b, f32::min)
+    }
+
+    fn componentwise_max(a: Point<N>, b: Point<N>) -> Point<N> {
+        Point::bimap(a, b, f32::max)
+    }
 }
 
 impl<const N: usize> Mul<f32> for Point<N> {
@@ -132,5 +142,15 @@ impl<const N: usize> Sub<Point<N>> for Point<N> {
 
     fn sub(self, rhs: Point<N>) -> Self::Output {
         Point::bimap(self, rhs, |x, y| x - y)
+    }
+}
+
+pub fn point_extrema<const N: usize>(v: Option<Bounds<N>>, s: &Point<N>) -> Option<Bounds<N>> {
+    if let Some(Bounds { mut min, mut max }) = v {
+        min = Point::componentwise_min(min, *s);
+        max = Point::componentwise_max(max, *s);
+        Some(Bounds { min, max })
+    } else {
+        Some(Bounds { min: *s, max: *s })
     }
 }
