@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
-use crate::n2::{cubic_bezier::CubicBezierPath, lineset::LineSet, polyline::PolyLine};
+use crate::{
+    n2::{cubic_bezier::CubicBezierPath, lineset::LineSet, polyline::PolyLine},
+    nbase::polyline::LineSegment,
+};
 
 pub trait SVGable {
     fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
@@ -139,6 +142,20 @@ impl SVGable for LineSet {
         for l in &self.lines {
             l.to_svg(w)?
         }
+        Ok(())
+    }
+}
+
+impl SVGable for LineSegment<2> {
+    fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
+    where
+        W: std::io::Write,
+    {
+        write!(w, r#"<path stroke="black" fill="transparent" d=""#,)?;
+        write!(w, "M {},{} ", self.ps[0].vs[0], self.ps[0].vs[1])?;
+        write!(w, "L {},{}", self.ps[1].vs[0], self.ps[1].vs[1])?;
+        writeln!(w, r#""/>"#)?;
+
         Ok(())
     }
 }

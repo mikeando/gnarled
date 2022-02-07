@@ -3,6 +3,29 @@ use crate::nbase::lineset::LineSet;
 use crate::nbase::point::Point;
 use crate::nbase::traits::*;
 
+pub struct LineSegment<const N: usize> {
+    pub ps: [Point<N>; 2],
+}
+
+impl<const N: usize> LineSegment<N> {
+    pub(crate) fn len2(&self) -> f32 {
+        let d = self.ps[1] - self.ps[0];
+        d.dot(d)
+    }
+
+    pub(crate) fn split(&self) -> (LineSegment<N>, LineSegment<N>) {
+        let mp = Point::lerp(0.5, self.ps[0], self.ps[1]);
+        (
+            LineSegment {
+                ps: [self.ps[0], mp],
+            },
+            LineSegment {
+                ps: [mp, self.ps[1]],
+            },
+        )
+    }
+}
+
 #[derive(Clone)]
 pub struct PolyLine<const N: usize> {
     pub ps: Vec<Point<N>>,
@@ -67,6 +90,19 @@ impl<const N: usize> PolyLine<N> {
         }
 
         LineSet { lines }
+    }
+
+    pub fn line_segments(&self) -> Vec<LineSegment<N>> {
+        let mut result = vec![];
+        if self.ps.len() < 2 {
+            return result;
+        }
+        for i in 0..self.ps.len() - 1 {
+            result.push(LineSegment {
+                ps: [self.ps[i], self.ps[i + 1]],
+            });
+        }
+        result
     }
 }
 
