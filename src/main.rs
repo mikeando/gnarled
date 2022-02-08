@@ -1,17 +1,22 @@
 pub mod svg;
 
 pub mod n2;
+pub mod n3;
 pub mod nbase;
 
 use n2::lineset::LineSet;
 use n2::polyline::PolyLine;
 use n2::traits::Rotatable;
+use n3::shape::Consumer;
+use nbase::polyline::LineSegment;
 use nbase::traits::*;
 
 use svg::SVGable;
 
 use crate::n2::point::p2;
 use crate::n2::tile::make_tile;
+use crate::n3::Camera;
+use crate::nbase::bounds::Bounds;
 use crate::{
     n2::cubic_bezier::{CubicBezierPath, CubicBezierSegment},
     svg::{PolyLineProperties, PolyLineStroke},
@@ -22,6 +27,7 @@ fn main() -> Result<(), std::io::Error> {
     test_clip()?;
     test_cbez()?;
     test_shader()?;
+    test_3d()?;
     Ok(())
 }
 
@@ -238,6 +244,53 @@ pub fn test_shader() -> Result<(), std::io::Error> {
         .collect::<Vec<_>>();
     let p = PolyLine { ps };
     p.to_svg(&mut f)?;
+
+    writeln!(f, "</svg>")?;
+
+    Ok(())
+}
+
+pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
+
+impl<'a> Consumer for ConsumeToFile<'a> {
+    fn add(&mut self, ls: &LineSegment<2>) {
+        ls.to_svg(self.0).unwrap()
+    }
+}
+
+pub fn test_3d() -> Result<(), std::io::Error> {
+    use crate::n3::p3;
+    use std::io::Write;
+
+    let file_name = "test_3d.svg";
+    let mut f = std::fs::File::create(file_name).unwrap();
+    writeln!(
+        f,
+        r#"<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">"#
+    )?;
+
+    let mut scene = crate::n3::Scene::new();
+    let cube = crate::n3::shape::AABox {
+        bounds: Bounds {
+            min: p3(-1.0, -1.0, -1.0),
+            max: p3(1.0, 1.0, 1.0),
+        },
+    };
+    let camera: Camera = crate::n3::CameraBuilder::builder()
+        .canvas(0.0, 0.0, 800.0, 800.0)
+        .eye(0.0, 0.0, 10.0)
+        .fwd(0.0, 0.0, -1.0)
+        .right(1.0, 0.0, 0.0)
+        .up(0.0, 1.0, 0.0)
+        .create()
+        .unwrap();
+
+    scene.add_primitive(cube);
+
+    {
+        let mut consumer = ConsumeToFile(&mut f);
+        scene.render(&camera, &mut consumer)?;
+    }
 
     writeln!(f, "</svg>")?;
 
