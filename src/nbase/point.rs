@@ -106,11 +106,11 @@ impl<const N: usize> Point<N> {
         Point { vs }
     }
 
-    fn componentwise_min(a: Point<N>, b: Point<N>) -> Point<N> {
+    pub fn componentwise_min(a: Point<N>, b: Point<N>) -> Point<N> {
         Point::bimap(a, b, f32::min)
     }
 
-    fn componentwise_max(a: Point<N>, b: Point<N>) -> Point<N> {
+    pub fn componentwise_max(a: Point<N>, b: Point<N>) -> Point<N> {
         Point::bimap(a, b, f32::max)
     }
 }
