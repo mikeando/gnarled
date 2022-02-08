@@ -1,4 +1,3 @@
-pub mod point3d;
 pub mod svg;
 
 pub mod n2;
