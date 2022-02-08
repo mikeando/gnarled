@@ -10,8 +10,8 @@ pub struct Hit<'a>(&'a dyn Shape, f32);
 // TODO: direction should be different class?
 // TODO: should live in nbase?
 pub struct Ray {
-    origin: Point<3>,
-    direction: Point<3>,
+    pub origin: Point<3>,
+    pub direction: Point<3>,
 }
 
 pub trait Shape {
@@ -132,7 +132,21 @@ impl Shape for AABox {
                     continue;
                 }
 
-                consumer.add(&ls_screen);
+                // Check if it's occluded.
+                let o1 = occlusion_info.is_occluded(&ls.ps[0]);
+                let o2 = occlusion_info.is_occluded(&ls.ps[1]);
+                if (o1 && o2) {
+                    continue;
+                }
+                if (!o1 && !o2) {
+                    consumer.add(&ls_screen);
+                    continue;
+                }
+                if ls_screen.len2() > camera.lmin {
+                    let (ls1, ls2) = ls.split();
+                    line_segments.push(ls2);
+                    line_segments.push(ls1);
+                }
             }
         }
         Ok(())

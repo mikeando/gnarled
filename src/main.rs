@@ -260,6 +260,7 @@ impl<'a> Consumer for ConsumeToFile<'a> {
 
 pub fn test_3d() -> Result<(), std::io::Error> {
     use crate::n3::p3;
+    use crate::nbase::point::Point;
     use std::io::Write;
 
     let file_name = "test_3d.svg";
@@ -270,27 +271,61 @@ pub fn test_3d() -> Result<(), std::io::Error> {
     )?;
 
     let mut scene = crate::n3::Scene::new();
-    let cube = crate::n3::shape::AABox {
-        bounds: Bounds {
-            min: p3(-1.0, -1.0, -1.0),
-            max: p3(1.0, 1.0, 1.0),
-        },
-    };
     let camera: Camera = crate::n3::CameraBuilder::builder()
         .canvas(0.0, 0.0, 800.0, 800.0)
-        .eye(0.0, 0.0, 10.0)
-        .fwd(0.0, 0.0, -1.0)
+        .eye(15.0, 15.0, 15.0)
+        .fwd(-1.0, -1.0, -1.0)
         .right(1.0, 0.0, 0.0)
-        .up(0.0, 1.0, 0.0)
+        .up(0.0, 0.0, 1.0)
         .create()
         .unwrap();
 
-    scene.add_primitive(cube);
+    for iy in -2..=2 {
+        let y0 = 3.0 * iy as f32;
+        for ix in -2..=2 {
+            let x0 = 3.0 * ix as f32;
+            let cube = crate::n3::shape::AABox {
+                bounds: Bounds {
+                    min: p3(x0 - 1.0, y0 - 1.0, -1.0),
+                    max: p3(x0 + 1.0, y0 + 1.0, 1.0),
+                },
+            };
+            scene.add_primitive(cube);
+        }
+    }
+
+    for iz in 0..8 {
+        let z0 = 1.0 * iz as f32;
+        let cube = crate::n3::shape::AABox {
+            bounds: Bounds {
+                min: p3(-0.5, -0.5, z0 - 0.25),
+                max: p3(0.5, 0.5, z0 + 0.25),
+            },
+        };
+        scene.add_primitive(cube);
+    }
 
     {
         let mut consumer = ConsumeToFile(&mut f);
         scene.render(&camera, &mut consumer)?;
     }
+
+    PolyLine {
+        ps: vec![
+            Point::from([0.0, 0.0]),
+            Point::from([800.0, 0.0]),
+            Point::from([800.0, 800.0]),
+            Point::from([0.0, 800.0]),
+            Point::from([0.0, 0.0]),
+        ],
+    }
+    .to_svg_with_properties(
+        &mut f,
+        PolyLineProperties {
+            stroke: PolyLineStroke::Red,
+        },
+    )
+    .unwrap();
 
     writeln!(f, "</svg>")?;
 

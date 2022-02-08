@@ -1,9 +1,12 @@
 use crate::{
     n2::point::p2,
+    n3::shape::Ray,
     nbase::{bounds::Bounds, point::Point, polyline::LineSegment},
 };
 
 use self::shape::{Consumer, Shape};
+
+use nalgebra as na;
 
 pub mod shape;
 
@@ -17,10 +20,34 @@ pub fn create_culling_info(camera: &Camera) -> CullingInfo {
     CullingInfo {}
 }
 
-pub struct OcclusionInfo {}
+pub struct OcclusionInfo<'a, 'b> {
+    eye: Point<3>,
+    shapes: &'a [Box<dyn Shape + 'b>],
+}
 
-pub fn create_occlusion_info(camera: &Camera, shapes: &[Box<dyn Shape + '_>]) -> OcclusionInfo {
-    OcclusionInfo {}
+impl<'a, 'b> OcclusionInfo<'a, 'b> {
+    fn is_occluded(&self, p: &Point<3>) -> bool {
+        let ray = Ray {
+            origin: *p,
+            direction: self.eye - *p,
+        };
+        for s in self.shapes {
+            if let Some(_) = s.intersect(&ray) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+pub fn create_occlusion_info<'a, 'b>(
+    camera: &Camera,
+    shapes: &'a [Box<dyn Shape + 'b>],
+) -> OcclusionInfo<'a, 'b> {
+    OcclusionInfo {
+        eye: camera.eye,
+        shapes,
+    }
 }
 
 impl<'a> Scene<'a> {
@@ -64,18 +91,96 @@ pub struct Camera {
     // Maximum length of line-segments.
     // Larger ones will be split
     lmax: f32,
+    lmin: f32,
 }
 impl Camera {
-    fn is_segment_visible(&self, ls: &LineSegment<3>) -> bool {
+    fn to_camera_coordinates(&self, p: &Point<3>) -> Point<3> {
         // Transform to camera coordinates.
+        // TODO: Store some of this in the camera object.
+        let eye = na::Vector3::from(self.eye.vs);
+        let fwd = na::Vector3::from(self.fwd.vs);
+        let right = na::Vector3::from(self.right.vs);
+        let up = na::Vector3::from(self.up.vs);
 
-        true
+        // We trust the fwd vector the most.
+        // up should be orthogonal to fwd.
+        // but it might not be, so to fix that we add a small amount
+        // of fwd.
+        // u' = u - a f
+        // 0=<u',f> = <u,f> - a <f,f>
+        // a = <u,f>/<f,f>
+        let f = fwd;
+        let a = up.dot(&f) / f.dot(&f);
+        let u = up - a * f;
+
+        // eprintln!("f={:?}", f);
+        // eprintln!("up={:?} u={:?}",up, u);
+
+        // Now we don't trust right. It should be orthogonal to f and u
+        // so we adjust it by adding some f and some u
+        // r' = r + b f + c u'
+        // 0 = <r',f> = <r,f> - b <f,f> - c<f,u'> => b=<r,f>/<f,f>
+        // 0 = <r',u'> = <r,u'> -b <f,u'> -c<u',u'> => c = <r,u'>/<u',u'>
+        let b = right.dot(&f) / f.dot(&f);
+        let c = right.dot(&u) / u.dot(&u);
+        let r = right - b * f - c * u;
+        // eprintln!("right={:?} r={:?}",right, r);
+
+        let m = na::Matrix3::from_columns(&[r, u, f]);
+        let invM = m.try_inverse().unwrap();
+        let p = na::Vector3::from(p.vs);
+
+        let d = p - eye;
+        let dd = invM * d;
+        Point::from([dd[0] / dd[2], dd[1] / dd[2], dd[2]])
     }
 
     fn project_pt(&self, p: &Point<3>) -> Point<2> {
-        Point {
-            vs: [p.vs[0], p.vs[1]],
+        let p = self.to_camera_coordinates(p);
+        let m = (self.canvas.min + self.canvas.max) * 0.5;
+        let d = (self.canvas.max - self.canvas.min) * 0.5;
+        m + Point::from([p.vs[0], -p.vs[1]]) * d
+    }
+
+    fn is_segment_visible(&self, ls: &LineSegment<3>) -> bool {
+        let p1 = self.to_camera_coordinates(&ls.ps[0]);
+        let p2 = self.to_camera_coordinates(&ls.ps[1]);
+
+        // At least one has to be in front of the z=1 clipping plane
+        if p1.vs[2] < 1.0 && p2.vs[2] < 1.0 {
+            return false;
         }
+
+        // If either end is inside the view then the segment is
+        // visible
+        if -1.0 <= p1.vs[0] && p1.vs[0] <= 1.0 && -1.0 <= p1.vs[1] && p1.vs[1] <= 1.0 {
+            return true;
+        }
+
+        if -1.0 <= p2.vs[0] && p2.vs[0] <= 1.0 && -1.0 <= p2.vs[1] && p2.vs[1] <= 1.0 {
+            return true;
+        }
+
+        // Both points fall in one of the excluding half planes => false
+        if p1.vs[0] < -1.0 && p2.vs[0] < -1.0 {
+            return false;
+        }
+
+        if p1.vs[0] > 1.0 && p2.vs[0] > 1.0 {
+            return false;
+        }
+
+        if p1.vs[1] < -1.0 && p2.vs[1] < -1.0 {
+            return false;
+        }
+
+        if p1.vs[1] > 1.0 && p2.vs[1] > 1.0 {
+            return false;
+        }
+
+        // We could be cleverer here, but we don't need to be exact.
+        // So we'll just accept everything else.
+        true
     }
 
     fn project(&self, ls: &LineSegment<3>) -> LineSegment<2> {
@@ -163,7 +268,8 @@ impl CameraBuilder {
             fwd: self.fwd.unwrap(),
             right: self.right.unwrap(),
             up: self.up.unwrap(),
-            lmax: 1.0,
+            lmax: 2.0,
+            lmin: 0.2,
         })
     }
 }
