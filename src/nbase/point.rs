@@ -1,4 +1,4 @@
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 use crate::nbase::bounds::Bounds;
 
@@ -126,6 +126,13 @@ impl<const N: usize> Mul<Point<N>> for Point<N> {
     type Output = Point<N>;
     fn mul(self, rhs: Point<N>) -> Self::Output {
         Point::bimap(self, rhs, |a, b| a * b)
+    }
+}
+
+impl<const N: usize> Div<Point<N>> for Point<N> {
+    type Output = Point<N>;
+    fn div(self, rhs: Point<N>) -> Self::Output {
+        Point::bimap(self, rhs, |a, b| a / b)
     }
 }
 
