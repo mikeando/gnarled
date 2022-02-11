@@ -135,11 +135,11 @@ impl Shape for AABox {
                 // Check if it's occluded.
                 let o1 = occlusion_info.is_occluded(&ls.ps[0]);
                 let o2 = occlusion_info.is_occluded(&ls.ps[1]);
-                if (o1 && o2) {
+                if o1 && o2 {
                     continue;
                 }
-                if (!o1 && !o2) {
-                    consumer.add(&ls_screen);
+                if !o1 && !o2 {
+                    consumer.add_linesegment(&ls_screen);
                     continue;
                 }
                 if ls_screen.len2() > camera.lmin {
@@ -151,4 +151,128 @@ impl Shape for AABox {
         }
         Ok(())
     }
+}
+
+pub struct Sphere {
+    pub center: Point<3>,
+    pub radius: f32,
+}
+
+impl Shape for Sphere {
+    fn paths(&self) -> Vec<PolyLine<3>> {
+        let mut result = vec![];
+        let nz = 20;
+        let ns = 80;
+        for iz in 0..nz {
+            // [0,1]
+            let xi = (iz as f32 + 0.5) / (nz as f32);
+            // [-1,1]
+            let xi = 2.0*xi - 1.0;
+            let z = self.center.vs[2] + xi * self.radius;
+            let r = (1.0-xi*xi).sqrt() *self.radius;
+            let ps = (0..=ns).map(|i| 2.0 * std::f32::consts::PI * (i as f32)/(ns as f32)).map(|th|self.center+p3(r*th.cos(), r*th.sin(), z)).collect();
+            result.push( PolyLine{ ps  });
+        }
+        result
+    }
+
+    fn intersect(&self, ray: &Ray) -> Option<Hit> {
+
+        // Sphere is ||x-c||^2 = r^2
+        // Ray is x = o + t u
+        // <o-c + t u, o-c +tu> = r^2
+        // d = o-c
+        // <d + t u, d + t u> = r^2
+        // <d,d> + 2<d,u> t + <u,u> t^2  = r^2
+        //
+        // quadratic formulae
+        //
+        // t = {-2 <d,u> +/- sqrt( 4<d,u>^2 - 4 (<d,d>-r^2) <u,u>)} / 2 <u,u>
+        // t = {-<d,u> +/- sqrt(<d,u>^2 - (<d,d>-r^2)<u,u>)} / <u,u>
+
+        let u = ray.direction;
+        let d = ray.origin - self.center;
+        let du = d.dot(u);
+        let d2 = d.dot(d);
+        let u2 = u.dot(u);
+        let r2 = (self.radius*0.995)*(self.radius*0.995);
+        let discr = du*du - (d2-r2)*u2;
+
+        if discr < 0.0 {
+            return None
+        }
+
+        let tp = (-du + discr.sqrt())/u2;
+        let tn = (-du - discr.sqrt())/u2;
+        if tn > 1e-3 {
+             return Some(Hit(self, tn))
+        }
+        if tp > 1e-3 {
+            return Some(Hit(self, tp))
+        }
+        return None
+    }
+
+    fn contains(&self, x: Point<3>, tol: f32) -> bool {
+        let d = x - self.center;
+        let d2 = d.dot(d);
+        let r2= (self.radius-tol)*(self.radius-tol);
+        d2 < r2
+    }
+
+    fn bounds(&self) -> Bounds<3> {
+        let r = self.radius;
+        let d = p3(r,r,r);
+        Bounds{
+            min: self.center - d,
+            max: self.center + d,
+        }
+    }
+
+    fn compile(&self) {
+    }
+
+    fn render(
+        &self,
+        camera: &Camera,
+        occlusion_info: &OcclusionInfo,
+        consumer: &mut dyn Consumer,
+    ) -> Result<(), std::io::Error> {
+        let paths = self.paths();
+        for p in paths {
+            let mut line_segments = p.line_segments();
+
+            while let Some(ls) = line_segments.pop() {
+                // Is the segment on-screen?
+                if !camera.is_segment_visible(&ls) {
+                    continue;
+                }
+
+                // How big is the line segment in screen space
+                let ls_screen = camera.project(&ls);
+                if ls_screen.len2() > camera.lmax {
+                    let (ls1, ls2) = ls.split();
+                    line_segments.push(ls2);
+                    line_segments.push(ls1);
+                    continue;
+                }
+
+                // Check if it's occluded.
+                let o1 = occlusion_info.is_occluded(&ls.ps[0]);
+                let o2 = occlusion_info.is_occluded(&ls.ps[1]);
+                if o1 && o2 {
+                    continue;
+                }
+                if !o1 && !o2 {
+                    consumer.add_linesegment(&ls_screen);
+                    continue;
+                }
+                if ls_screen.len2() > camera.lmin {
+                    let (ls1, ls2) = ls.split();
+                    line_segments.push(ls2);
+                    line_segments.push(ls1);
+                }
+            }
+        }
+        Ok(())    }
 }

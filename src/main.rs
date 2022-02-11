@@ -28,6 +28,8 @@ fn main() -> Result<(), std::io::Error> {
     test_cbez()?;
     test_shader()?;
     test_3d()?;
+    test_3d_sphere()?;
+
     Ok(())
 }
 
@@ -294,6 +296,12 @@ pub fn test_3d() -> Result<(), std::io::Error> {
         }
     }
 
+    let sphere = crate::n3::shape::Sphere{
+        center: p3(6.0,-6.0,0.0),
+        radius: 3.0,
+    };
+    scene.add_primitive(sphere);
+
     for iz in 0..8 {
         let z0 = 1.0 * iz as f32;
         let cube = crate::n3::shape::AABox {
@@ -304,6 +312,61 @@ pub fn test_3d() -> Result<(), std::io::Error> {
         };
         scene.add_primitive(cube);
     }
+
+    {
+        let mut consumer = ConsumeToFile(&mut f);
+        scene.render(&camera, &mut consumer)?;
+    }
+
+    PolyLine {
+        ps: vec![
+            Point::from([0.0, 0.0]),
+            Point::from([800.0, 0.0]),
+            Point::from([800.0, 800.0]),
+            Point::from([0.0, 800.0]),
+            Point::from([0.0, 0.0]),
+        ],
+    }
+    .to_svg_with_properties(
+        &mut f,
+        PolyLineProperties {
+            stroke: PolyLineStroke::Red,
+        },
+    )
+    .unwrap();
+
+    writeln!(f, "</svg>")?;
+
+    Ok(())
+}
+
+pub fn test_3d_sphere() -> Result<(), std::io::Error> {
+    use crate::n3::p3;
+    use crate::nbase::point::Point;
+    use std::io::Write;
+
+    let file_name = "test_3d_sphere.svg";
+    let mut f = std::fs::File::create(file_name).unwrap();
+    writeln!(
+        f,
+        r#"<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">"#
+    )?;
+
+    let mut scene = crate::n3::Scene::new();
+    let camera: Camera = crate::n3::CameraBuilder::builder()
+        .canvas(0.0, 0.0, 800.0, 800.0)
+        .eye(15.0, 15.0, 15.0)
+        .fwd(-1.0, -1.0, -1.0)
+        .right(1.0, 0.0, 0.0)
+        .up(0.0, 0.0, 1.0)
+        .create()
+        .unwrap();
+
+    let sphere = crate::n3::shape::Sphere{
+        center: p3(0.0,0.0,0.0),
+        radius: 5.0,
+    };
+    scene.add_primitive(sphere);
 
     {
         let mut consumer = ConsumeToFile(&mut f);
