@@ -1,10 +1,10 @@
 use crate::{
     n2::point::p2,
     n3::shape::Ray,
-    nbase::{bounds::Bounds, point::Point, polyline::LineSegment},
+    nbase::{bounds::Bounds, point::Point, polyline::LineSegment, lineset::LineSet},
 };
 
-use self::shape::{Consumer, Shape};
+use self::shape::Shape;
 
 use nalgebra as na;
 
@@ -272,4 +272,36 @@ impl CameraBuilder {
             lmin: 0.2,
         })
     }
+}
+
+pub trait Texture {
+    fn apply(&self, p: Point<2>) -> f32;
+}
+
+
+pub trait Consumer {
+    fn add_lineset(&mut self, p: LineSet<2>);
+    fn add_linesegment(&mut self, ls: &LineSegment<2>);
+}
+
+// How does this differ from Shading in n2::hl and can we combine them?
+
+pub trait ScreenSpaceTexture {
+    fn apply(
+        &self,
+        screen_bounds: Bounds<2>,
+        brightness: &dyn Texture,
+        mask: &dyn Texture,
+        consumer: &mut dyn Consumer,
+    );
+}
+
+pub trait ObjectSpaceTexture {
+    fn apply(
+        &self,
+        uv_bounds: Bounds<2>,
+        uv_brightness: &dyn Texture,
+        uv_mask: &dyn Texture,
+        consumer: &mut dyn Consumer,
+    );
 }

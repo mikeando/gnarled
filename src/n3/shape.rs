@@ -1,9 +1,9 @@
 use crate::n3::p3;
 use crate::nbase::point::Point;
 use crate::nbase::polyline::PolyLine;
-use crate::nbase::{bounds::Bounds, polyline::LineSegment};
+use crate::nbase::{bounds::Bounds};
 
-use super::{Camera, OcclusionInfo};
+use super::{Camera, OcclusionInfo, Consumer};
 
 pub struct Hit<'a>(&'a dyn Shape, f32);
 
@@ -33,9 +33,7 @@ pub struct AABox {
     pub bounds: Bounds<3>,
 }
 
-pub trait Consumer {
-    fn add(&mut self, ls: &LineSegment<2>);
-}
+
 
 impl Shape for AABox {
     fn paths(&self) -> Vec<PolyLine<3>> {

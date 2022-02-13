@@ -4,31 +4,37 @@ pub mod n2;
 pub mod n3;
 pub mod nbase;
 
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
 use n2::lineset::LineSet;
 use n2::polyline::PolyLine;
 use n2::traits::Rotatable;
-use n3::shape::Consumer;
+use n3::Consumer;
 use nbase::polyline::LineSegment;
 use nbase::traits::*;
 
 use svg::SVGable;
+use tokio::sync::mpsc::channel;
 
 use crate::n2::point::p2;
 use crate::n2::tile::make_tile;
 use crate::n3::Camera;
 use crate::nbase::bounds::Bounds;
+use crate::nbase::line_merger::{LineMerger, BinningLineMerger, BinningPolyLineMerger};
 use crate::{
     n2::cubic_bezier::{CubicBezierPath, CubicBezierSegment},
     svg::{PolyLineProperties, PolyLineStroke},
 };
 
 fn main() -> Result<(), std::io::Error> {
-    test_spiral()?;
-    test_clip()?;
-    test_cbez()?;
-    test_shader()?;
-    test_3d()?;
-    test_3d_sphere()?;
+    // test_spiral()?;
+    // test_clip()?;
+    // test_cbez()?;
+    // test_shader()?;
+    // test_3d()?;
+    // test_3d_sphere()?;
+
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
@@ -368,10 +374,15 @@ pub fn test_shader() -> Result<(), std::io::Error> {
     Ok(())
 }
 
+
 pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
 
 impl<'a> Consumer for ConsumeToFile<'a> {
-    fn add(&mut self, ls: &LineSegment<2>) {
+    fn add_linesegment(&mut self, ls: &LineSegment<2>) {
+        ls.to_svg(self.0).unwrap()
+    }
+
+    fn add_lineset(&mut self, ls: nbase::lineset::LineSet<2>) {
         ls.to_svg(self.0).unwrap()
     }
 }
