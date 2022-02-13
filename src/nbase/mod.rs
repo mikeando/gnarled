@@ -4,3 +4,4 @@ pub mod lineset;
 pub mod point;
 pub mod polyline;
 pub mod traits;
+pub mod line_merger;

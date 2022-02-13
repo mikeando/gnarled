@@ -29,6 +29,14 @@ fn main() -> Result<(), std::io::Error> {
     test_shader()?;
     test_3d()?;
     test_3d_sphere()?;
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            test_shader_combined().await
+        })?;
+
 
     Ok(())
 }
@@ -209,6 +217,114 @@ pub fn test_cbez() -> Result<(), std::io::Error> {
 
     Ok(())
 }
+
+pub struct StoreLinesConsumer{
+    linesets: Vec<LineSet>
+}
+
+impl n2::hl::Consumer for StoreLinesConsumer {
+    fn add(&mut self, p: LineSet) {
+        self.linesets.push(p)
+    }
+}
+
+pub async fn test_shader_combined() -> Result<(), std::io::Error> {
+    use crate::n2::hl::*;
+    use std::io::Write;
+
+    let file_name = "test_shader_bin_combined.svg";
+    let mut f = std::fs::File::create(file_name).unwrap();
+    writeln!(
+        f,
+        r#"<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">"#
+    )?;
+
+    let rand = Box::new(DefaultHasherRandField2D {});
+
+    let s = ShadingV0 {
+        anchor: p2(0.0, 0.0),
+        d: p2(5.0, 5.0),
+        rand,
+    };
+
+    {
+        let circle = Circle {
+            center: p2(400.0, 400.0),
+            radius: 400.0,
+            shading: Box::new(|p| p.dot(p).sqrt() * (p.vs[0] + 1.0) / 2.0),
+        };
+        let mut store_lines = StoreLinesConsumer{linesets:vec![]};
+        s.apply(&circle, &mut store_lines);
+
+        let (mut inputA, mut outputA) = channel(100);
+        let (mut inputB, mut outputB) = channel(100);
+        let (mut inputC, mut outputC) = channel(100);
+        let (mut inputD, mut outputD) = channel(100);
+
+
+        let pusher = tokio::spawn(  async move {
+            for lineset in store_lines.linesets {
+                for polyline in lineset.lines {
+                    for ls in polyline.line_segments() {
+                        inputA.send(ls).await;
+                    }
+                }
+            }
+        });
+        let mut merger = LineMerger{
+            input: outputA,
+            output: inputB,
+            current_line: None,
+        };
+        let merger = tokio::spawn(async move { merger.run().await });
+
+        let mut binning_merger = BinningLineMerger{
+            input: outputB,
+            output: inputC,
+            entries: vec![],
+            nodes: HashMap::new(),
+        };
+        let binmerger = tokio::spawn(async move { binning_merger.run().await });
+
+        let polyline_merge = BinningPolyLineMerger{
+            input: outputC,
+            output: inputD,
+            entries: vec![],
+            nodes: HashMap::new(),
+        };
+        let polymerger = tokio::spawn(async move { polyline_merge.run().await });
+
+        let writer = tokio::spawn(
+            async move {
+                let mut result = vec![];
+                while let Some(ls) = outputD.recv().await {
+                    result.push(ls);
+                }
+                result
+            }
+        );
+        pusher.await?;
+        merger.await?.unwrap();
+        binmerger.await?.unwrap();
+        polymerger.await?.unwrap();
+        let result = writer.await?;
+        for ls in result {
+            ls.to_svg(&mut f)?;
+        }
+    }
+
+    let ps = (0..101)
+        .map(|i| (i as f32) * 2.0f32 * std::f32::consts::PI / 100.0f32)
+        .map(|t| p2((400.0 * t.cos()) + 400.0, (400.0 * t.sin()) + 400.0))
+        .collect::<Vec<_>>();
+    let p = PolyLine { ps };
+    p.to_svg(&mut f)?;
+
+    writeln!(f, "</svg>")?;
+
+    Ok(())
+}
+
 
 pub fn test_shader() -> Result<(), std::io::Error> {
     use crate::n2::hl::*;

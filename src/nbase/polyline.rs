@@ -3,6 +3,7 @@ use crate::nbase::lineset::LineSet;
 use crate::nbase::point::Point;
 use crate::nbase::traits::*;
 
+#[derive(Debug, Clone)]
 pub struct LineSegment<const N: usize> {
     pub ps: [Point<N>; 2],
 }
@@ -24,9 +25,13 @@ impl<const N: usize> LineSegment<N> {
             },
         )
     }
+
+    pub(crate) fn reverse(&self) -> LineSegment<N> {
+        LineSegment { ps: [self.ps[1], self.ps[0]] }
+    }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PolyLine<const N: usize> {
     pub ps: Vec<Point<N>>,
 }
@@ -103,6 +108,12 @@ impl<const N: usize> PolyLine<N> {
             });
         }
         result
+    }
+
+    pub(crate) fn reverse(&self) -> PolyLine<N> {
+        let mut ps = self.ps.clone();
+        ps.reverse();
+        PolyLine { ps }
     }
 }
 
