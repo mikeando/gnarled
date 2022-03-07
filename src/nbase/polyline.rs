@@ -27,7 +27,9 @@ impl<const N: usize> LineSegment<N> {
     }
 
     pub(crate) fn reverse(&self) -> LineSegment<N> {
-        LineSegment { ps: [self.ps[1], self.ps[0]] }
+        LineSegment {
+            ps: [self.ps[1], self.ps[0]],
+        }
     }
 }
 

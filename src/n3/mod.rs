@@ -1,7 +1,7 @@
 use crate::{
     n2::point::p2,
     n3::shape::Ray,
-    nbase::{bounds::Bounds, point::Point, polyline::LineSegment, lineset::LineSet},
+    nbase::{bounds::Bounds, lineset::LineSet, point::Point, polyline::LineSegment},
 };
 
 use self::shape::Shape;
@@ -277,7 +277,6 @@ impl CameraBuilder {
 pub trait Texture {
     fn apply(&self, p: Point<2>) -> f32;
 }
-
 
 pub trait Consumer {
     fn add_lineset(&mut self, p: LineSet<2>);

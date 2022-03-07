@@ -21,7 +21,7 @@ use crate::n2::point::p2;
 use crate::n2::tile::make_tile;
 use crate::n3::Camera;
 use crate::nbase::bounds::Bounds;
-use crate::nbase::line_merger::{LineMerger, BinningLineMerger, BinningPolyLineMerger};
+use crate::nbase::line_merger::{BinningLineMerger, BinningPolyLineMerger, LineMerger};
 use crate::{
     n2::cubic_bezier::{CubicBezierPath, CubicBezierSegment},
     svg::{PolyLineProperties, PolyLineStroke},
@@ -224,8 +224,8 @@ pub fn test_cbez() -> Result<(), std::io::Error> {
     Ok(())
 }
 
-pub struct StoreLinesConsumer{
-    linesets: Vec<LineSet>
+pub struct StoreLinesConsumer {
+    linesets: Vec<LineSet>,
 }
 
 impl n2::hl::Consumer for StoreLinesConsumer {
@@ -259,7 +259,7 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
             radius: 400.0,
             shading: Box::new(|p| p.dot(p).sqrt() * (p.vs[0] + 1.0) / 2.0),
         };
-        let mut store_lines = StoreLinesConsumer{linesets:vec![]};
+        let mut store_lines = StoreLinesConsumer { linesets: vec![] };
         s.apply(&circle, &mut store_lines);
 
         let (mut inputA, mut outputA) = channel(100);
@@ -267,8 +267,7 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
         let (mut inputC, mut outputC) = channel(100);
         let (mut inputD, mut outputD) = channel(100);
 
-
-        let pusher = tokio::spawn(  async move {
+        let pusher = tokio::spawn(async move {
             for lineset in store_lines.linesets {
                 for polyline in lineset.lines {
                     for ls in polyline.line_segments() {
@@ -277,14 +276,14 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
                 }
             }
         });
-        let mut merger = LineMerger{
+        let mut merger = LineMerger {
             input: outputA,
             output: inputB,
             current_line: None,
         };
         let merger = tokio::spawn(async move { merger.run().await });
 
-        let mut binning_merger = BinningLineMerger{
+        let mut binning_merger = BinningLineMerger {
             input: outputB,
             output: inputC,
             entries: vec![],
@@ -292,7 +291,7 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
         };
         let binmerger = tokio::spawn(async move { binning_merger.run().await });
 
-        let polyline_merge = BinningPolyLineMerger{
+        let polyline_merge = BinningPolyLineMerger {
             input: outputC,
             output: inputD,
             entries: vec![],
@@ -300,15 +299,13 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
         };
         let polymerger = tokio::spawn(async move { polyline_merge.run().await });
 
-        let writer = tokio::spawn(
-            async move {
-                let mut result = vec![];
-                while let Some(ls) = outputD.recv().await {
-                    result.push(ls);
-                }
-                result
+        let writer = tokio::spawn(async move {
+            let mut result = vec![];
+            while let Some(ls) = outputD.recv().await {
+                result.push(ls);
             }
-        );
+            result
+        });
         pusher.await?;
         merger.await?.unwrap();
         binmerger.await?.unwrap();
@@ -330,7 +327,6 @@ pub async fn test_shader_combined() -> Result<(), std::io::Error> {
 
     Ok(())
 }
-
 
 pub fn test_shader() -> Result<(), std::io::Error> {
     use crate::n2::hl::*;
@@ -373,7 +369,6 @@ pub fn test_shader() -> Result<(), std::io::Error> {
 
     Ok(())
 }
-
 
 pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
 
@@ -423,8 +418,8 @@ pub fn test_3d() -> Result<(), std::io::Error> {
         }
     }
 
-    let sphere = crate::n3::shape::Sphere{
-        center: p3(6.0,-6.0,0.0),
+    let sphere = crate::n3::shape::Sphere {
+        center: p3(6.0, -6.0, 0.0),
         radius: 3.0,
     };
     scene.add_primitive(sphere);
@@ -489,8 +484,8 @@ pub fn test_3d_sphere() -> Result<(), std::io::Error> {
         .create()
         .unwrap();
 
-    let sphere = crate::n3::shape::Sphere{
-        center: p3(0.0,0.0,0.0),
+    let sphere = crate::n3::shape::Sphere {
+        center: p3(0.0, 0.0, 0.0),
         radius: 5.0,
     };
     scene.add_primitive(sphere);

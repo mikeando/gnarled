@@ -1,9 +1,9 @@
 use crate::n3::p3;
+use crate::nbase::bounds::Bounds;
 use crate::nbase::point::Point;
 use crate::nbase::polyline::PolyLine;
-use crate::nbase::{bounds::Bounds};
 
-use super::{Camera, OcclusionInfo, Consumer};
+use super::{Camera, Consumer, OcclusionInfo};
 
 pub struct Hit<'a>(&'a dyn Shape, f32);
 
@@ -32,8 +32,6 @@ pub trait Shape {
 pub struct AABox {
     pub bounds: Bounds<3>,
 }
-
-
 
 impl Shape for AABox {
     fn paths(&self) -> Vec<PolyLine<3>> {
@@ -165,17 +163,19 @@ impl Shape for Sphere {
             // [0,1]
             let xi = (iz as f32 + 0.5) / (nz as f32);
             // [-1,1]
-            let xi = 2.0*xi - 1.0;
+            let xi = 2.0 * xi - 1.0;
             let z = self.center.vs[2] + xi * self.radius;
-            let r = (1.0-xi*xi).sqrt() *self.radius;
-            let ps = (0..=ns).map(|i| 2.0 * std::f32::consts::PI * (i as f32)/(ns as f32)).map(|th|self.center+p3(r*th.cos(), r*th.sin(), z)).collect();
-            result.push( PolyLine{ ps  });
+            let r = (1.0 - xi * xi).sqrt() * self.radius;
+            let ps = (0..=ns)
+                .map(|i| 2.0 * std::f32::consts::PI * (i as f32) / (ns as f32))
+                .map(|th| self.center + p3(r * th.cos(), r * th.sin(), z))
+                .collect();
+            result.push(PolyLine { ps });
         }
         result
     }
 
     fn intersect(&self, ray: &Ray) -> Option<Hit> {
-
         // Sphere is ||x-c||^2 = r^2
         // Ray is x = o + t u
         // <o-c + t u, o-c +tu> = r^2
@@ -193,42 +193,41 @@ impl Shape for Sphere {
         let du = d.dot(u);
         let d2 = d.dot(d);
         let u2 = u.dot(u);
-        let r2 = (self.radius*0.995)*(self.radius*0.995);
-        let discr = du*du - (d2-r2)*u2;
+        let r2 = (self.radius * 0.995) * (self.radius * 0.995);
+        let discr = du * du - (d2 - r2) * u2;
 
         if discr < 0.0 {
-            return None
+            return None;
         }
 
-        let tp = (-du + discr.sqrt())/u2;
-        let tn = (-du - discr.sqrt())/u2;
+        let tp = (-du + discr.sqrt()) / u2;
+        let tn = (-du - discr.sqrt()) / u2;
         if tn > 1e-3 {
-             return Some(Hit(self, tn))
+            return Some(Hit(self, tn));
         }
         if tp > 1e-3 {
-            return Some(Hit(self, tp))
+            return Some(Hit(self, tp));
         }
-        return None
+        return None;
     }
 
     fn contains(&self, x: Point<3>, tol: f32) -> bool {
         let d = x - self.center;
         let d2 = d.dot(d);
-        let r2= (self.radius-tol)*(self.radius-tol);
+        let r2 = (self.radius - tol) * (self.radius - tol);
         d2 < r2
     }
 
     fn bounds(&self) -> Bounds<3> {
         let r = self.radius;
-        let d = p3(r,r,r);
-        Bounds{
+        let d = p3(r, r, r);
+        Bounds {
             min: self.center - d,
             max: self.center + d,
         }
     }
 
-    fn compile(&self) {
-    }
+    fn compile(&self) {}
 
     fn render(
         &self,
@@ -272,5 +271,6 @@ impl Shape for Sphere {
                 }
             }
         }
-        Ok(())    }
+        Ok(())
+    }
 }
