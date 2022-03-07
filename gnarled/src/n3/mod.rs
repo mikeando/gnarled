@@ -51,18 +51,18 @@ pub fn create_occlusion_info<'a, 'b>(
 }
 
 impl<'a> Scene<'a> {
-    pub(crate) fn new() -> Scene<'a> {
+    pub fn new() -> Scene<'a> {
         Scene { shapes: vec![] }
     }
 
-    pub(crate) fn add_primitive<T>(&mut self, shape: T)
+    pub fn add_primitive<T>(&mut self, shape: T)
     where
         T: 'static + Shape,
     {
         self.shapes.push(Box::new(shape));
     }
 
-    pub(crate) fn render(
+    pub fn render(
         &self,
         camera: &Camera,
         consumer: &mut dyn Consumer,
@@ -205,11 +205,11 @@ pub struct CameraBuilder {
 }
 
 impl CameraBuilder {
-    pub(crate) fn builder() -> CameraBuilder {
+    pub fn builder() -> CameraBuilder {
         CameraBuilder::default()
     }
 
-    pub(crate) fn canvas(&self, xmin: f32, ymin: f32, xmax: f32, ymax: f32) -> CameraBuilder {
+    pub fn canvas(&self, xmin: f32, ymin: f32, xmax: f32, ymax: f32) -> CameraBuilder {
         let mut result = self.clone();
         result.canvas = Some(Bounds {
             min: p2(xmin, ymin),
@@ -218,31 +218,31 @@ impl CameraBuilder {
         result
     }
 
-    pub(crate) fn eye(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
+    pub fn eye(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
         let mut result = self.clone();
         result.eye = Some(p3(x, y, z));
         result
     }
 
-    pub(crate) fn fwd(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
+    pub fn fwd(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
         let mut result = self.clone();
         result.fwd = Some(p3(x, y, z));
         result
     }
 
-    pub(crate) fn right(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
+    pub fn right(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
         let mut result = self.clone();
         result.right = Some(p3(x, y, z));
         result
     }
 
-    pub(crate) fn up(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
+    pub fn up(&self, x: f32, y: f32, z: f32) -> CameraBuilder {
         let mut result = self.clone();
         result.up = Some(p3(x, y, z));
         result
     }
 
-    pub(crate) fn create(&self) -> Result<Camera, CameraBuilderError> {
+    pub fn create(&self) -> Result<Camera, CameraBuilderError> {
         let mut missing_fields = vec![];
         if self.canvas.is_none() {
             missing_fields.push("canvas".to_string());
