@@ -48,9 +48,8 @@ impl<const N: usize> Point<N> {
     }
 
     pub fn dot(&self, n: Point<N>) -> f32 {
-        self.vs
-            .into_iter()
-            .zip(n.vs.into_iter())
+        IntoIterator::into_iter(self.vs)
+            .zip(IntoIterator::into_iter(n.vs))
             .map(|(a, b)| a * b)
             .sum()
     }

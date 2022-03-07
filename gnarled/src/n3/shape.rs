@@ -90,7 +90,7 @@ impl Shape for AABox {
         if t0 >= 1e-3 && t0 < t1 {
             return Some(Hit(self, t0));
         }
-        return None;
+        None
     }
 
     fn contains(&self, x: Point<3>, tol: f32) -> bool {
@@ -208,7 +208,7 @@ impl Shape for Sphere {
         if tp > 1e-3 {
             return Some(Hit(self, tp));
         }
-        return None;
+        None
     }
 
     fn contains(&self, x: Point<3>, tol: f32) -> bool {

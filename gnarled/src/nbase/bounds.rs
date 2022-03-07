@@ -22,6 +22,6 @@ impl<const N: usize> Bounds<N> {
         if (self.max - p).min() < 0.0 {
             return false;
         }
-        return true;
+        true
     }
 }

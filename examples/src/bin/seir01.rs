@@ -38,7 +38,7 @@ impl Triangle {
         let BC = Point::lerp(0.5, B, C);
         let CA = Point::lerp(0.5, C, A);
 
-        return [
+        [
             Triangle {
                 vertices: [A, AB, CA],
             }
@@ -54,7 +54,7 @@ impl Triangle {
             }
             .scale(0.95)
             .rotate(0.1),
-        ];
+        ]
     }
 }
 

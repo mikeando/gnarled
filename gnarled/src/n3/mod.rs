@@ -32,11 +32,11 @@ impl<'a, 'b> OcclusionInfo<'a, 'b> {
             direction: self.eye - *p,
         };
         for s in self.shapes {
-            if let Some(_) = s.intersect(&ray) {
+            if s.intersect(&ray).is_some() {
                 return true;
             }
         }
-        return false;
+        false
     }
 }
 
@@ -94,6 +94,7 @@ pub struct Camera {
     lmin: f32,
 }
 impl Camera {
+    #[allow(clippy::many_single_char_names)]
     fn to_camera_coordinates(&self, p: &Point<3>) -> Point<3> {
         // Transform to camera coordinates.
         // TODO: Store some of this in the camera object.

@@ -4,6 +4,7 @@ use gnarled::{
     svg::SVGable,
 };
 
+#[allow(clippy::many_single_char_names)]
 fn main() -> Result<(), std::io::Error> {
     use std::io::Write;
     let file_name = "spiral.svg";
@@ -13,7 +14,7 @@ fn main() -> Result<(), std::io::Error> {
         .map(|t| p2((t * t.cos()) * 40.0, (t * t.sin()) * 40.0))
         .collect::<Vec<_>>();
     let p = PolyLine { ps };
-    let bb = p.bounds().unwrap();
+    let _bb = p.bounds().unwrap();
     let p = p.shift_by(p2(400., 400.));
     writeln!(
         f,

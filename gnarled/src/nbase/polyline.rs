@@ -73,22 +73,21 @@ impl<const N: usize> PolyLine<N> {
                     let pp = Point::lerp(alpha, p_prev, *p);
                     current_points = Some(vec![pp, *p]);
                 }
+            } else if a_prev >= 0.0 {
+                assert!(current_points.is_some());
+                // TODO: Handle the case where f is not linear?
+                let da = a - a_prev;
+                let alpha = a / da;
+                //TODO: I think this is wrong!
+                let pp = Point::lerp(alpha, p_prev, *p);
+                current_points.as_mut().unwrap().push(pp);
+                lines.push(PolyLine {
+                    ps: current_points.take().unwrap(),
+                });
             } else {
-                if a_prev >= 0.0 {
-                    assert!(current_points.is_some());
-                    // TODO: Handle the case where f is not linear?
-                    let da = a - a_prev;
-                    let alpha = a / da;
-                    //TODO: I think this is wrong!
-                    let pp = Point::lerp(alpha, p_prev, *p);
-                    current_points.as_mut().unwrap().push(pp);
-                    lines.push(PolyLine {
-                        ps: current_points.take().unwrap(),
-                    });
-                } else {
-                    assert!(current_points.is_none());
-                }
+                assert!(current_points.is_none());
             }
+
             p_prev = *p;
             a_prev = a;
         }

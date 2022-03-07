@@ -1,4 +1,4 @@
-use std::{collections::HashMap, f32::consts::E};
+use std::{collections::HashMap};
 
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -12,6 +12,7 @@ pub struct LineMerger<const N: usize> {
     pub current_line: Option<LineSegment<N>>,
 }
 
+#[allow(non_snake_case)]
 fn merge<const N: usize>(ls1: &LineSegment<N>, ls2: &LineSegment<N>) -> Option<LineSegment<N>> {
     let x0 = ls1.ps[0];
     let x1 = ls1.ps[1];
