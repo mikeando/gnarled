@@ -1,10 +1,14 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
+use async_trait::async_trait;
+use tokio::sync::mpsc::Sender;
+
 use crate::n2::bounds::Bounds;
 use crate::n2::lineset::LineSet;
 use crate::n2::point::Point;
 use crate::n2::polyline::PolyLine;
+use crate::nbase::polyline::LineSegment;
 use crate::svg::SVGable;
 
 use crate::n2::point::p2;
@@ -23,8 +27,14 @@ pub trait Consumer {
     fn add(&mut self, p: LineSet);
 }
 
+#[async_trait]
 pub trait Shading {
     fn apply(&self, obj: &dyn Shadable, consumer: &mut dyn Consumer);
+    async fn apply_async(
+        &self,
+        obj: &(dyn Shadable + Send + Sync),
+        consumer: Sender<LineSegment<2>>,
+    );
 }
 
 pub trait RandomField2D {
@@ -35,53 +45,50 @@ pub trait RandomField2D {
 pub struct ShadingV0 {
     pub anchor: Point,
     pub d: Point,
-    pub rand: Box<dyn RandomField2D>,
+    pub rand: Box<dyn RandomField2D + Send + Sync>,
 }
 
 impl Bounds {
     //TODO: This is not working yet!
-    pub fn clip(&self, ls: LineSegment) -> Option<LineSegment> {
+    pub fn clip(&self, ls: LineSegment<2>) -> Option<LineSegment<2>> {
         Some(ls)
     }
 }
 
-pub fn clip_by_mask(lsx: LineSegment, mask: &dyn Mask) -> LineSet {
+pub fn clip_by_mask(lsx: LineSegment<2>, mask: &dyn Mask) -> LineSet {
     // For now we just do a linear split based on the values of the
     // end points. Later we might want to do something cleverer and
     // subdivide the line-segment if large.
-    let m0 = mask.mask(lsx.0);
-    let m1 = mask.mask(lsx.1);
+    let m0 = mask.mask(lsx.ps[0]);
+    let m1 = mask.mask(lsx.ps[1]);
     if (m0 >= 0.0) && (m1 >= 0.0) {
         LineSet {
             lines: vec![PolyLine {
-                ps: vec![lsx.0, lsx.1],
+                ps: vec![lsx.ps[0], lsx.ps[1]],
             }],
         }
     } else if (m0 < 0.0) && (m1 < 0.0) {
         LineSet { lines: vec![] }
     } else if m0 >= 0.0 {
         let z = -m0 / (m1 - m0);
-        let p = Point::lerp(z, lsx.0, lsx.1);
+        let p = Point::lerp(z, lsx.ps[0], lsx.ps[1]);
         LineSet {
-            lines: vec![PolyLine { ps: vec![lsx.0, p] }],
+            lines: vec![PolyLine {
+                ps: vec![lsx.ps[0], p],
+            }],
         }
     } else {
         let z = -m0 / (m1 - m0);
-        let p = Point::lerp(z, lsx.0, lsx.1);
+        let p = Point::lerp(z, lsx.ps[0], lsx.ps[1]);
         LineSet {
-            lines: vec![PolyLine { ps: vec![p, lsx.1] }],
+            lines: vec![PolyLine {
+                ps: vec![p, lsx.ps[1]],
+            }],
         }
     }
 }
 
-pub struct LineSegment(Point, Point);
-
-impl LineSegment {
-    fn midpoint(&self) -> Point {
-        (self.0 + self.1) * 0.5
-    }
-}
-
+#[async_trait]
 impl Shading for ShadingV0 {
     fn apply(&self, obj: &dyn Shadable, consumer: &mut dyn Consumer) {
         let bounds = obj.bounds();
@@ -102,7 +109,7 @@ impl Shading for ShadingV0 {
                 let px = p0 + self.d * p2(1.0, 0.0);
                 let py = p0 + self.d * p2(0.0, 1.0);
 
-                let lsx = LineSegment(p0, px);
+                let lsx = LineSegment::new(p0, px);
                 let lsx = bounds.clip(lsx);
                 if let Some(lsx) = lsx {
                     let mid = lsx.midpoint();
@@ -115,7 +122,7 @@ impl Shading for ShadingV0 {
                     }
                 }
 
-                let lsy = LineSegment(p0, py);
+                let lsy = LineSegment::new(p0, py);
                 let lsy = bounds.clip(lsy);
                 if let Some(lsy) = lsy {
                     let mid = lsy.midpoint();
@@ -124,6 +131,65 @@ impl Shading for ShadingV0 {
                     if s >= p {
                         let lsy = clip_by_mask(lsy, obj.mask());
                         consumer.add(lsy);
+                    }
+                }
+            }
+        }
+    }
+
+    async fn apply_async(
+        &self,
+        obj: &(dyn Shadable + Send + Sync),
+        consumer: Sender<LineSegment<2>>,
+    ) {
+        let bounds = obj.bounds();
+        let s = self.d.map(|x| 1.0f32 / x);
+        let i_min = (bounds.min - self.anchor) * s;
+        let i_max = (bounds.max - self.anchor) * s;
+
+        let ix_min = i_min.vs[0].floor() as i32;
+        let ix_max = i_max.vs[0].ceil() as i32;
+
+        let iy_min = i_min.vs[1].floor() as i32;
+        let iy_max = i_max.vs[1].ceil() as i32;
+
+        // Now we generate a lot of line-segments.
+        for iy in iy_min..=iy_max {
+            for ix in ix_min..=ix_max {
+                let p0 = self.anchor + self.d * p2(ix as f32, iy as f32);
+                let px = p0 + self.d * p2(1.0, 0.0);
+                let py = p0 + self.d * p2(0.0, 1.0);
+
+                let lsx = LineSegment::new(p0, px);
+                let lsx = bounds.clip(lsx);
+                if let Some(lsx) = lsx {
+                    let mid = lsx.midpoint();
+                    let p = self.rand.at(mid);
+                    let s = obj.weight(mid);
+
+                    if s >= p {
+                        let lsx = clip_by_mask(lsx, obj.mask());
+                        for pl in lsx.lines {
+                            for ls in pl.line_segments() {
+                                consumer.send(ls).await.unwrap();
+                            }
+                        }
+                    }
+                }
+
+                let lsy = LineSegment::new(p0, py);
+                let lsy = bounds.clip(lsy);
+                if let Some(lsy) = lsy {
+                    let mid = lsy.midpoint();
+                    let p = self.rand.at(mid);
+                    let s = obj.weight(mid);
+                    if s >= p {
+                        let lsy = clip_by_mask(lsy, obj.mask());
+                        for pl in lsy.lines {
+                            for ls in pl.line_segments() {
+                                consumer.send(ls).await.unwrap();
+                            }
+                        }
                     }
                 }
             }
@@ -176,7 +242,7 @@ impl Mask for AxisAlignedQuad {
 pub struct Circle {
     pub center: Point,
     pub radius: f32,
-    pub shading: Box<dyn Fn(Point) -> f32>,
+    pub shading: Box<dyn Fn(Point) -> f32 + Send + Sync>,
 }
 
 impl Shadable for Circle {

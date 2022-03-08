@@ -68,7 +68,9 @@ fn merge_pl<const N: usize>(pl1: &PolyLine<N>, pl2: &PolyLine<N>) -> Option<Poly
 }
 
 impl<const N: usize> LineMerger<N> {
-    pub async fn run(&mut self) -> Result<(), ()> {
+    // This is mut self so that self is dropped
+    // at the end, closing the output channel.
+    pub async fn run(mut self) -> Result<(), ()> {
         while let Some(ls) = self.input.recv().await {
             match self.current_line.take() {
                 Some(current_line) => {

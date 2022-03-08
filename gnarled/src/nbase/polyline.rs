@@ -9,6 +9,10 @@ pub struct LineSegment<const N: usize> {
 }
 
 impl<const N: usize> LineSegment<N> {
+    pub(crate) fn new(p1: Point<N>, p2: Point<N>) -> LineSegment<N> {
+        LineSegment { ps: [p1, p2] }
+    }
+
     pub(crate) fn len2(&self) -> f32 {
         let d = self.ps[1] - self.ps[0];
         d.dot(d)
@@ -30,6 +34,10 @@ impl<const N: usize> LineSegment<N> {
         LineSegment {
             ps: [self.ps[1], self.ps[0]],
         }
+    }
+
+    pub(crate) fn midpoint(&self) -> Point<N> {
+        (self.ps[0] + self.ps[1]) * 0.5
     }
 }
 
