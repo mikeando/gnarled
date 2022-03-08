@@ -5,9 +5,7 @@ use gnarled::nbase::polyline::LineSegment;
 use gnarled::svg::SVGable;
 
 use gnarled::n3::Camera;
-use gnarled::{
-    svg::{PolyLineProperties, PolyLineStroke},
-};
+use gnarled::svg::{PolyLineProperties, PolyLineStroke};
 
 pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
 

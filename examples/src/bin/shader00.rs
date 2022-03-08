@@ -1,11 +1,8 @@
-
 use gnarled::n2::polyline::PolyLine;
-
 
 use gnarled::svg::SVGable;
 
 use gnarled::n2::point::p2;
-
 
 pub fn main() -> Result<(), std::io::Error> {
     use gnarled::n2::hl::*;

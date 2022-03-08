@@ -9,7 +9,6 @@ use gnarled::{
     svg::{PolyLineProperties, PolyLineStroke},
 };
 
-
 pub fn main() -> Result<(), std::io::Error> {
     use std::io::Write;
 

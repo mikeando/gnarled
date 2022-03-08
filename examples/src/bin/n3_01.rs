@@ -1,4 +1,3 @@
-
 use gnarled::n2::polyline::PolyLine;
 use gnarled::n3::Consumer;
 use gnarled::nbase::point::Point;
@@ -8,9 +7,7 @@ use gnarled::svg::SVGable;
 
 use gnarled::n3::Camera;
 use gnarled::nbase::bounds::Bounds;
-use gnarled::{
-    svg::{PolyLineProperties, PolyLineStroke},
-};
+use gnarled::svg::{PolyLineProperties, PolyLineStroke};
 
 pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
 

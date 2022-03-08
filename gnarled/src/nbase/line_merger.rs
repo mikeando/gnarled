@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use tokio::sync::mpsc::{Receiver, Sender};
 
@@ -180,7 +180,6 @@ impl<const N: usize> BinningLineMerger<N> {
                 self.output.send(e).await.unwrap();
             }
         }
-
         Ok(())
     }
 }

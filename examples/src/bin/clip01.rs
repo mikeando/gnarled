@@ -1,12 +1,9 @@
-
 use gnarled::n2::polyline::PolyLine;
 
 use gnarled::svg::SVGable;
 
 use gnarled::n2::point::p2;
-use gnarled::{
-    svg::{PolyLineProperties, PolyLineStroke},
-};
+use gnarled::svg::{PolyLineProperties, PolyLineStroke};
 
 pub fn main() -> Result<(), std::io::Error> {
     use std::io::Write;
