@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::{
+    sync::mpsc::{channel, Receiver, Sender},
+    try_join,
+};
 
 use crate::nbase::polyline::PolyLine;
 
@@ -68,6 +71,14 @@ fn merge_pl<const N: usize>(pl1: &PolyLine<N>, pl2: &PolyLine<N>) -> Option<Poly
 }
 
 impl<const N: usize> LineMerger<N> {
+    pub fn new(input: Receiver<LineSegment<N>>, output: Sender<LineSegment<N>>) -> LineMerger<N> {
+        LineMerger {
+            input,
+            output,
+            current_line: None,
+        }
+    }
+
     // This is mut self so that self is dropped
     // at the end, closing the output channel.
     pub async fn run(mut self) -> Result<(), ()> {
@@ -107,6 +118,18 @@ pub struct BinningLineMerger<const N: usize> {
 }
 
 impl<const N: usize> BinningLineMerger<N> {
+    pub fn new(
+        input: Receiver<LineSegment<N>>,
+        output: Sender<LineSegment<N>>,
+    ) -> BinningLineMerger<N> {
+        BinningLineMerger {
+            input,
+            output,
+            entries: vec![],
+            nodes: HashMap::new(),
+        }
+    }
+
     pub async fn run(mut self) -> Result<(), ()> {
         while let Some(mut ls) = self.input.recv().await {
             // Find the bin for the start vertex
@@ -194,6 +217,18 @@ pub struct BinningPolyLineMerger<const N: usize> {
 }
 
 impl<const N: usize> BinningPolyLineMerger<N> {
+    pub fn new(
+        input: Receiver<LineSegment<N>>,
+        output: Sender<PolyLine<N>>,
+    ) -> BinningPolyLineMerger<N> {
+        BinningPolyLineMerger {
+            input,
+            output,
+            entries: vec![],
+            nodes: HashMap::new(),
+        }
+    }
+
     pub async fn run(mut self) -> Result<(), ()> {
         while let Some(ls) = self.input.recv().await {
             let mut pl = PolyLine {
@@ -274,6 +309,37 @@ impl<const N: usize> BinningPolyLineMerger<N> {
             }
         }
 
+        Ok(())
+    }
+}
+
+pub struct MegaMerger<const N: usize> {
+    line_merger: LineMerger<N>,
+    binning_merger: BinningLineMerger<N>,
+    polyline_merger: BinningPolyLineMerger<N>,
+}
+
+impl<const N: usize> MegaMerger<N> {
+    pub fn new(output_a: Receiver<LineSegment<N>>, input_d: Sender<PolyLine<N>>) -> MegaMerger<N> {
+        let (input_b, output_b) = channel(100);
+        let (input_c, output_c) = channel(100);
+
+        let line_merger = LineMerger::new(output_a, input_b);
+        let binning_merger = BinningLineMerger::new(output_b, input_c);
+        let polyline_merger = BinningPolyLineMerger::new(output_c, input_d);
+
+        MegaMerger {
+            line_merger,
+            binning_merger,
+            polyline_merger,
+        }
+    }
+
+    pub async fn run(self) -> Result<(), ()> {
+        let lm = self.line_merger.run();
+        let bm = self.binning_merger.run();
+        let pm = self.polyline_merger.run();
+        try_join!(lm, bm, pm)?;
         Ok(())
     }
 }

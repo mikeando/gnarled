@@ -1,26 +1,18 @@
 use std::collections::HashMap;
-
-use gnarled::n2::lineset::LineSet;
+use std::ops::DerefMut;
+use std::sync::{Arc, Mutex};
 
 use gnarled::nbase::polyline::{LineSegment, PolyLine};
 use gnarled::svg::SVGable;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 use gnarled::n2::point::p2;
-use gnarled::nbase::line_merger::{BinningLineMerger, BinningPolyLineMerger, LineMerger};
+use gnarled::nbase::line_merger::{
+    BinningLineMerger, BinningPolyLineMerger, LineMerger, MegaMerger,
+};
 use tokio::sync::mpsc::error::SendError;
 use tokio::task::{JoinError, JoinHandle};
 use tokio::try_join;
-
-pub struct StoreLinesConsumer {
-    linesets: Vec<LineSet>,
-}
-
-impl gnarled::n2::hl::Consumer for StoreLinesConsumer {
-    fn add(&mut self, p: LineSet) {
-        self.linesets.push(p)
-    }
-}
 
 fn main() -> Result<(), Error> {
     tokio::runtime::Builder::new_multi_thread()
@@ -56,61 +48,16 @@ impl From<std::io::Error> for Error {
     }
 }
 
-pub struct MegaMerger<const N: usize> {
-    line_merger: LineMerger<N>,
-    binning_merger: BinningLineMerger<N>,
-    polyline_merger: BinningPolyLineMerger<N>,
-}
-
-impl<const N: usize> MegaMerger<N> {
-    pub fn new(output_a: Receiver<LineSegment<N>>, input_d: Sender<PolyLine<N>>) -> MegaMerger<N> {
-        let (input_b, output_b) = channel(100);
-        let (input_c, output_c) = channel(100);
-
-        let line_merger = LineMerger {
-            input: output_a,
-            output: input_b,
-            current_line: None,
-        };
-
-        let binning_merger = BinningLineMerger {
-            input: output_b,
-            output: input_c,
-            entries: vec![],
-            nodes: HashMap::new(),
-        };
-
-        let polyline_merger = BinningPolyLineMerger {
-            input: output_c,
-            output: input_d,
-            entries: vec![],
-            nodes: HashMap::new(),
-        };
-
-        MegaMerger {
-            line_merger,
-            binning_merger,
-            polyline_merger,
-        }
-    }
-
-    async fn run(self) -> Result<(), ()> {
-        let lm = self.line_merger.run();
-        let bm = self.binning_merger.run();
-        let pm = self.polyline_merger.run();
-        try_join!(lm, bm, pm)?;
-        Ok(())
-    }
-}
-
 pub async fn async_main() -> Result<(), Error> {
     use gnarled::n2::hl::*;
     use std::io::Write;
 
     let file_name = "shader01.svg";
-    let mut f = std::fs::File::create(file_name).unwrap();
+    let f = std::fs::File::create(file_name).unwrap();
+    let ff = Arc::new(Mutex::new(f));
+
     writeln!(
-        f,
+        ff.lock().unwrap(),
         r#"<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">"#
     )?;
 
@@ -137,19 +84,16 @@ pub async fn async_main() -> Result<(), Error> {
 
         let mm = tokio::spawn(async move { mm.run().await });
 
-        let writer = tokio::spawn(async move {
-            let mut result = vec![];
+        let ff = ff.clone();
+        let writer: JoinHandle<Result<(), Error>> = tokio::spawn(async move {
             while let Some(ls) = output_d.recv().await {
-                result.push(ls);
+                ls.to_svg(ff.lock().unwrap().deref_mut())?;
             }
-            result
+            Ok(())
         });
         pusher.await?;
         mm.await?.unwrap();
-        let result = writer.await?;
-        for ls in result {
-            ls.to_svg(&mut f)?;
-        }
+        writer.await??;
     }
 
     let ps = (0..101)
@@ -157,9 +101,9 @@ pub async fn async_main() -> Result<(), Error> {
         .map(|t| p2((400.0 * t.cos()) + 400.0, (400.0 * t.sin()) + 400.0))
         .collect::<Vec<_>>();
     let p = PolyLine { ps };
-    p.to_svg(&mut f)?;
+    p.to_svg(ff.lock().unwrap().deref_mut())?;
 
-    writeln!(f, "</svg>")?;
+    writeln!(ff.lock().unwrap().deref_mut(), "</svg>")?;
 
     Ok(())
 }
