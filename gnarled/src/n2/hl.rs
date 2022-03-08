@@ -29,7 +29,6 @@ pub trait Consumer {
 
 #[async_trait]
 pub trait Shading {
-    fn apply(&self, obj: &dyn Shadable, consumer: &mut dyn Consumer);
     async fn apply_async(
         &self,
         obj: &(dyn Shadable + Send + Sync),
@@ -90,53 +89,6 @@ pub fn clip_by_mask(lsx: LineSegment<2>, mask: &dyn Mask) -> LineSet {
 
 #[async_trait]
 impl Shading for ShadingV0 {
-    fn apply(&self, obj: &dyn Shadable, consumer: &mut dyn Consumer) {
-        let bounds = obj.bounds();
-        let s = self.d.map(|x| 1.0f32 / x);
-        let i_min = (bounds.min - self.anchor) * s;
-        let i_max = (bounds.max - self.anchor) * s;
-
-        let ix_min = i_min.vs[0].floor() as i32;
-        let ix_max = i_max.vs[0].ceil() as i32;
-
-        let iy_min = i_min.vs[1].floor() as i32;
-        let iy_max = i_max.vs[1].ceil() as i32;
-
-        // Now we generate a lot of line-segments.
-        for iy in iy_min..=iy_max {
-            for ix in ix_min..=ix_max {
-                let p0 = self.anchor + self.d * p2(ix as f32, iy as f32);
-                let px = p0 + self.d * p2(1.0, 0.0);
-                let py = p0 + self.d * p2(0.0, 1.0);
-
-                let lsx = LineSegment::new(p0, px);
-                let lsx = bounds.clip(lsx);
-                if let Some(lsx) = lsx {
-                    let mid = lsx.midpoint();
-                    let p = self.rand.at(mid);
-                    let s = obj.weight(mid);
-
-                    if s >= p {
-                        let lsx = clip_by_mask(lsx, obj.mask());
-                        consumer.add(lsx);
-                    }
-                }
-
-                let lsy = LineSegment::new(p0, py);
-                let lsy = bounds.clip(lsy);
-                if let Some(lsy) = lsy {
-                    let mid = lsy.midpoint();
-                    let p = self.rand.at(mid);
-                    let s = obj.weight(mid);
-                    if s >= p {
-                        let lsy = clip_by_mask(lsy, obj.mask());
-                        consumer.add(lsy);
-                    }
-                }
-            }
-        }
-    }
-
     async fn apply_async(
         &self,
         obj: &(dyn Shadable + Send + Sync),
