@@ -1,5 +1,6 @@
+use std::sync::{Arc, Mutex};
+
 use gnarled::n2::polyline::PolyLine;
-use gnarled::n3::Consumer;
 use gnarled::nbase::point::Point;
 use gnarled::nbase::polyline::LineSegment;
 
@@ -8,27 +9,54 @@ use gnarled::svg::SVGable;
 use gnarled::n3::Camera;
 use gnarled::nbase::bounds::Bounds;
 use gnarled::svg::{PolyLineProperties, PolyLineStroke};
+use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::error::SendError;
+use tokio::task::{JoinError, JoinHandle};
 
-pub struct ConsumeToFile<'a>(&'a mut std::fs::File);
+#[derive(Debug)]
+pub enum Error {
+    JoinError(JoinError),
+    SendError,
+    IOError(std::io::Error),
+}
 
-impl<'a> Consumer for ConsumeToFile<'a> {
-    fn add_linesegment(&mut self, ls: &LineSegment<2>) {
-        ls.to_svg(self.0).unwrap()
-    }
-
-    fn add_lineset(&mut self, ls: gnarled::nbase::lineset::LineSet<2>) {
-        ls.to_svg(self.0).unwrap()
+impl<T> From<SendError<T>> for Error {
+    fn from(_: SendError<T>) -> Self {
+        Error::SendError
     }
 }
 
-pub fn main() -> Result<(), std::io::Error> {
+impl From<JoinError> for Error {
+    fn from(e: JoinError) -> Self {
+        Error::JoinError(e)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::IOError(e)
+    }
+}
+
+fn main() -> Result<(), Error> {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async { async_main().await })?;
+    Ok(())
+}
+
+pub async fn async_main() -> Result<(), Error> {
     use gnarled::n3::p3;
     use std::io::Write;
+    use std::ops::DerefMut;
 
     let file_name = "n3_01.svg";
-    let mut f = std::fs::File::create(file_name).unwrap();
+    let f = std::fs::File::create(file_name).unwrap();
+    let ff = Arc::new(Mutex::new(f));
     writeln!(
-        f,
+        ff.lock().unwrap().deref_mut(),
         r#"<svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">"#
     )?;
 
@@ -74,8 +102,20 @@ pub fn main() -> Result<(), std::io::Error> {
     }
 
     {
-        let mut consumer = ConsumeToFile(&mut f);
-        scene.render(&camera, &mut consumer)?;
+        let (sender, recver) = channel(100);
+        let renderer = tokio::spawn(async move { scene.render(&camera, sender).await });
+
+        let ff = ff.clone();
+        let writer: JoinHandle<Result<(), Error>> = tokio::spawn(async move {
+            let mut recver = recver;
+            while let Some(ls) = recver.recv().await {
+                ls.to_svg(ff.lock().unwrap().deref_mut())?;
+            }
+            Ok(())
+        });
+        eprintln!("Awaiting writer...");
+        writer.await??;
+        renderer.await??;
     }
 
     PolyLine {
@@ -88,14 +128,14 @@ pub fn main() -> Result<(), std::io::Error> {
         ],
     }
     .to_svg_with_properties(
-        &mut f,
+        ff.lock().unwrap().deref_mut(),
         PolyLineProperties {
             stroke: PolyLineStroke::Red,
         },
     )
     .unwrap();
 
-    writeln!(f, "</svg>")?;
+    writeln!(ff.lock().unwrap().deref_mut(), "</svg>")?;
 
     Ok(())
 }

@@ -1,9 +1,12 @@
-use crate::n3::p3;
+use async_trait::async_trait;
+use tokio::sync::mpsc::Sender;
+
 use crate::nbase::bounds::Bounds;
 use crate::nbase::point::Point;
 use crate::nbase::polyline::PolyLine;
+use crate::{n3::p3, nbase::polyline::LineSegment};
 
-use super::{Camera, Consumer, OcclusionInfo};
+use super::{Camera, OcclusionInfo};
 
 pub struct Hit<'a>(&'a dyn Shape, f32);
 
@@ -14,18 +17,19 @@ pub struct Ray {
     pub direction: Point<3>,
 }
 
-pub trait Shape {
+#[async_trait]
+pub trait Shape: Send + Sync {
     fn paths(&self) -> Vec<PolyLine<3>>;
     fn intersect(&self, ray: &Ray) -> Option<Hit>;
     fn contains(&self, x: Point<3>, tol: f32) -> bool;
     fn bounds(&self) -> Bounds<3>;
     fn compile(&self);
 
-    fn render(
+    async fn render(
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<2>>,
     ) -> Result<(), std::io::Error>;
 }
 
@@ -33,6 +37,7 @@ pub struct AABox {
     pub bounds: Bounds<3>,
 }
 
+#[async_trait]
 impl Shape for AABox {
     fn paths(&self) -> Vec<PolyLine<3>> {
         let Point { vs: [x1, y1, z1] } = self.bounds.min;
@@ -103,11 +108,11 @@ impl Shape for AABox {
 
     fn compile(&self) {}
 
-    fn render(
+    async fn render(
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<2>>,
     ) -> Result<(), std::io::Error> {
         let paths = self.paths();
         for p in paths {
@@ -135,7 +140,7 @@ impl Shape for AABox {
                     continue;
                 }
                 if !o1 && !o2 {
-                    consumer.add_linesegment(&ls_screen);
+                    consumer.send(ls_screen).await.unwrap();
                     continue;
                 }
                 if ls_screen.len2() > camera.lmin {
@@ -154,6 +159,7 @@ pub struct Sphere {
     pub radius: f32,
 }
 
+#[async_trait]
 impl Shape for Sphere {
     fn paths(&self) -> Vec<PolyLine<3>> {
         let mut result = vec![];
@@ -229,11 +235,11 @@ impl Shape for Sphere {
 
     fn compile(&self) {}
 
-    fn render(
+    async fn render(
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<2>>,
     ) -> Result<(), std::io::Error> {
         let paths = self.paths();
         for p in paths {
@@ -261,7 +267,7 @@ impl Shape for Sphere {
                     continue;
                 }
                 if !o1 && !o2 {
-                    consumer.add_linesegment(&ls_screen);
+                    consumer.send(ls_screen).await.unwrap();
                     continue;
                 }
                 if ls_screen.len2() > camera.lmin {

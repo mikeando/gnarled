@@ -6,7 +6,9 @@ use crate::{
 
 use self::shape::Shape;
 
+use async_trait::async_trait;
 use nalgebra as na;
+use tokio::sync::mpsc::Sender;
 
 pub mod shape;
 
@@ -62,15 +64,15 @@ impl<'a> Scene<'a> {
         self.shapes.push(Box::new(shape));
     }
 
-    pub fn render(
+    pub async fn render(
         &self,
         camera: &Camera,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<2>>,
     ) -> Result<(), std::io::Error> {
         let culling_info = create_culling_info(camera);
         let occlusion_info = create_occlusion_info(camera, &self.shapes);
         for s in &self.shapes {
-            s.render(camera, &occlusion_info, consumer)?;
+            s.render(camera, &occlusion_info, consumer.clone()).await?;
         }
         Ok(())
     }
@@ -279,29 +281,26 @@ pub trait Texture {
     fn apply(&self, p: Point<2>) -> f32;
 }
 
-pub trait Consumer {
-    fn add_lineset(&mut self, p: LineSet<2>);
-    fn add_linesegment(&mut self, ls: &LineSegment<2>);
-}
-
 // How does this differ from Shading in n2::hl and can we combine them?
 
+#[async_trait]
 pub trait ScreenSpaceTexture {
-    fn apply(
+    async fn apply(
         &self,
         screen_bounds: Bounds<2>,
         brightness: &dyn Texture,
         mask: &dyn Texture,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<2>>,
     );
 }
 
+#[async_trait]
 pub trait ObjectSpaceTexture {
-    fn apply(
+    async fn apply(
         &self,
         uv_bounds: Bounds<2>,
         uv_brightness: &dyn Texture,
         uv_mask: &dyn Texture,
-        consumer: &mut dyn Consumer,
+        consumer: Sender<LineSegment<3>>,
     );
 }
