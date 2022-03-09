@@ -29,12 +29,12 @@ impl CubicBezierPath {
             r#"<path stroke="{}" fill="transparent" d=""#,
             props.stroke
         )?;
-        writeln!(w, "M {},{}", self.ps[0].vs[0], self.ps[0].vs[1])?;
+        writeln!(w, "M {:.2},{:.2}", self.ps[0].vs[0], self.ps[0].vs[1])?;
         for n in 0..(self.ps.len() - 1) / 3 {
             if let [_x, c1, c2, y] = self.ps[3 * n..3 * n + 4] {
                 writeln!(
                     w,
-                    "C {} {}, {} {}, {} {}",
+                    "C {:.2} {:.2}, {:.2} {:.2}, {:.2} {:.2}",
                     c1.vs[0], c1.vs[1], c2.vs[0], c2.vs[1], y.vs[0], y.vs[1]
                 )?;
             }
@@ -99,9 +99,9 @@ impl PolyLine {
             r#"<path stroke="{}" fill="transparent" d=""#,
             props.stroke
         )?;
-        writeln!(w, "M {},{}", self.ps[0].vs[0], self.ps[0].vs[1])?;
+        writeln!(w, "M {:.2},{:.2}", self.ps[0].vs[0], self.ps[0].vs[1])?;
         for pp in &self.ps[1..] {
-            writeln!(w, "L {},{}", pp.vs[0], pp.vs[1])?;
+            writeln!(w, "L {:.2},{:.2}", pp.vs[0], pp.vs[1])?;
         }
         writeln!(w, r#""/>"#)?;
 
@@ -152,8 +152,8 @@ impl SVGable for LineSegment<2> {
         W: std::io::Write,
     {
         write!(w, r#"<path stroke="black" fill="transparent" d=""#,)?;
-        write!(w, "M {},{} ", self.ps[0].vs[0], self.ps[0].vs[1])?;
-        write!(w, "L {},{}", self.ps[1].vs[0], self.ps[1].vs[1])?;
+        write!(w, "M {:.2},{:.2} ", self.ps[0].vs[0], self.ps[0].vs[1])?;
+        write!(w, "L {:.2},{:.2}", self.ps[1].vs[0], self.ps[1].vs[1])?;
         writeln!(w, r#""/>"#)?;
 
         Ok(())
