@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use gnarled::n2::polyline::PolyLine;
+use gnarled::nbase::line_merger::MegaMerger;
 use gnarled::nbase::point::Point;
 use gnarled::nbase::polyline::LineSegment;
 
@@ -103,11 +104,16 @@ pub async fn async_main() -> Result<(), Error> {
 
     {
         let (sender, recver) = channel(100);
+        let (merged_sender, merged_recver) = channel(100);
+
         let renderer = tokio::spawn(async move { scene.render(&camera, sender).await });
+
+        let mm = MegaMerger::new(recver, merged_sender);
+        let mm = tokio::spawn(async move { mm.run().await });
 
         let ff = ff.clone();
         let writer: JoinHandle<Result<(), Error>> = tokio::spawn(async move {
-            let mut recver = recver;
+            let mut recver = merged_recver;
             while let Some(ls) = recver.recv().await {
                 ls.to_svg(ff.lock().unwrap().deref_mut())?;
             }
@@ -115,6 +121,7 @@ pub async fn async_main() -> Result<(), Error> {
         });
         eprintln!("Awaiting writer...");
         writer.await??;
+        mm.await?.unwrap();
         renderer.await??;
     }
 
