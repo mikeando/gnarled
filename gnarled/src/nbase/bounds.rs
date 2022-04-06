@@ -1,9 +1,11 @@
 use crate::nbase::point::Point;
 
+use crate::nbase::point::Float;
+
 #[derive(Clone, Copy, Debug)]
-pub struct Bounds<const N: usize> {
-    pub min: Point<N>,
-    pub max: Point<N>,
+pub struct Bounds<const N: usize, F: Float=f32> {
+    pub min: Point<N, F>,
+    pub max: Point<N, F>,
 }
 
 impl<const N: usize> Bounds<N> {

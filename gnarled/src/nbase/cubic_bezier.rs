@@ -1,26 +1,34 @@
 use crate::nbase::point::Point;
 use crate::nbase::traits::Shiftable;
 
-pub struct CubicBezierSegment<const N: usize> {
-    pub ps: [Point<N>; 4],
+use super::point::Float;
+
+#[derive(Clone, Debug)]
+pub struct CubicBezierSegment<const N: usize, F> {
+    pub ps: [Point<N,F>; 4],
 }
 
-impl<const N: usize> CubicBezierSegment<N> {
-    pub fn split(&self, t: f32) -> (CubicBezierSegment<N>, CubicBezierSegment<N>) {
-        let s = 1.0 - t;
+impl<const N: usize, F> CubicBezierSegment<N, F> 
+where
+    F: Float
+{
+    pub fn split(&self, t: F) -> (CubicBezierSegment<N, F>, CubicBezierSegment<N, F>) {
+        let c2 = F::from_f64(2.0);
+        let c3 = F::from_f64(3.0);
+        let s = F::one() - t;
         let p1 = self.ps[0];
         let p2 = Point::scaled_sum(&[s, t], &[self.ps[0], self.ps[1]]);
         let p3 = Point::scaled_sum(
-            &[s * s, 2.0 * s * t, t * t],
+            &[s * s, c2 * s * t, t * t],
             &[self.ps[0], self.ps[1], self.ps[2]],
         );
         let p4 = Point::scaled_sum(
-            &[s * s * s, 3.0 * s * s * t, 3.0 * s * t * t, t * t * t],
+            &[s * s * s, c3 * s * s * t, c3 * s * t * t, t * t * t],
             &[self.ps[0], self.ps[1], self.ps[2], self.ps[3]],
         );
         let q1 = p4;
         let q2 = Point::scaled_sum(
-            &[s * s, 2.0 * s * t, t * t],
+            &[s * s, c2 * s * t, t * t],
             &[self.ps[1], self.ps[2], self.ps[3]],
         );
         let q3 = Point::scaled_sum(&[s, t], &[self.ps[2], self.ps[3]]);
@@ -35,24 +43,32 @@ impl<const N: usize> CubicBezierSegment<N> {
         )
     }
 
-    pub fn value(&self, t: f32) -> Point<N> {
-        let t2 = t * t;
-        let t3 = t2 * t;
-        let mt = 1.0 - t;
-        let mt2 = mt * mt;
-        let mt3 = mt2 * mt;
-        self.ps[0] * mt3 + self.ps[1] * 3.0 * mt2 * t + self.ps[2] * 3.0 * mt * t2 + self.ps[3] * t3
+    pub fn value(&self, t: F) -> Point<N,F> {
+        let b = cubic_basis(t);
+        self.ps[0] * b[0] + self.ps[1] * b[1] + self.ps[2] * b[2] + self.ps[3] * b[3]
     }
+    }
+}
+
+#[inline]
+pub fn cubic_basis<F: Float>(t:F) -> [F; 4] {
+    let c3 = F::from_f64(3.0);
+    let t2 = t * t;
+    let t3 = t2 * t;
+    let mt = F::one() - t;
+    let mt2 = mt * mt;
+    let mt3 = mt2 * mt;
+    [mt3, c3*mt2*t, c3*mt*t2, t3]
 }
 
 // Number of points should be 3*n+1 for some n
 #[derive(Clone)]
 pub struct CubicBezierPath<const N: usize> {
-    pub ps: Vec<Point<N>>,
+    pub ps: Vec<Point<N, f32>>,
 }
 
 impl<const N: usize> CubicBezierPath<N> {
-    pub fn segment(&self, n: usize) -> CubicBezierSegment<N> {
+    pub fn segment(&self, n: usize) -> CubicBezierSegment<N, f32> {
         assert!(n < (self.ps.len() - 1) / 3);
         let ps = &self.ps[3 * n..3 * n + 4];
         CubicBezierSegment {
@@ -71,8 +87,8 @@ impl<const N: usize> Shiftable<N> for CubicBezierPath<N> {
     }
 }
 
-impl<const N: usize> Shiftable<N> for CubicBezierSegment<N> {
-    type Result = CubicBezierSegment<N>;
+impl<const N: usize> Shiftable<N> for CubicBezierSegment<N, f32> {
+    type Result = CubicBezierSegment<N, f32>;
 
     fn shift_by(&self, d: Point<N>) -> Self::Result {
         CubicBezierSegment {
