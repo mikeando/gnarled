@@ -1,11 +1,11 @@
 # gnarled
-A playground for experimeting with SVG generation, with a view to being used with
+A playground for experimenting with SVG generation, with a view to being used with
 an Axidraw pen plotter for producing interesting art.
 
 
 ## Example SVGs
 
-Test for support of 3D primatives.
+Test for support of 3D primitives.
 
 ![drawing](sample_images/n3_02.svg)
 
