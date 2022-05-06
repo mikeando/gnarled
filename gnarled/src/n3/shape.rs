@@ -29,7 +29,7 @@ pub trait Shape: Send + Sync + std::fmt::Debug {
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     ) -> Result<(), std::io::Error>;
 }
 
@@ -125,7 +125,7 @@ impl Shape for AABox {
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     ) -> Result<(), std::io::Error> {
         let paths = self.paths();
         for p in paths {
@@ -253,7 +253,7 @@ impl Shape for Sphere {
         &self,
         camera: &Camera,
         occlusion_info: &OcclusionInfo,
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     ) -> Result<(), std::io::Error> {
         let paths = self.paths();
         for p in paths {

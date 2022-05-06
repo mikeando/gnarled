@@ -1,3 +1,4 @@
+pub mod attributes;
 pub mod svg;
 
 pub mod n2;

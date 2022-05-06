@@ -67,7 +67,7 @@ impl<'a> Scene<'a> {
     pub async fn render(
         &self,
         camera: &Camera,
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     ) -> Result<(), std::io::Error> {
         let culling_info = create_culling_info(camera);
         let occlusion_info = create_occlusion_info(camera, &self.shapes);
@@ -145,7 +145,7 @@ impl Camera {
         m + Point::from([p.vs[0], -p.vs[1]]) * d
     }
 
-    fn is_segment_visible(&self, ls: &LineSegment<3>) -> bool {
+    fn is_segment_visible(&self, ls: &LineSegment<3, ()>) -> bool {
         let p1 = self.to_camera_coordinates(&ls.ps[0]);
         let p2 = self.to_camera_coordinates(&ls.ps[1]);
 
@@ -186,9 +186,10 @@ impl Camera {
         true
     }
 
-    fn project(&self, ls: &LineSegment<3>) -> LineSegment<2> {
+    fn project(&self, ls: &LineSegment<3, ()>) -> LineSegment<2, ()> {
         LineSegment {
             ps: ls.ps.map(|p| self.project_pt(&p)),
+            attributes: (),
         }
     }
 }
@@ -290,7 +291,7 @@ pub trait ScreenSpaceTexture {
         screen_bounds: Bounds<2>,
         brightness: &dyn Texture,
         mask: &dyn Texture,
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     );
 }
 
@@ -301,6 +302,6 @@ pub trait ObjectSpaceTexture {
         uv_bounds: Bounds<2>,
         uv_brightness: &dyn Texture,
         uv_mask: &dyn Texture,
-        consumer: Sender<LineSegment<3>>,
+        consumer: Sender<LineSegment<3, ()>>,
     );
 }

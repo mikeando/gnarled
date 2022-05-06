@@ -69,7 +69,7 @@ impl<const N: usize> PolyLine<N> {
         LineSet { lines }
     }
 
-    pub fn line_segments(&self) -> Vec<LineSegment<N>> {
+    pub fn line_segments(&self) -> Vec<LineSegment<N, ()>> {
         let mut result = vec![];
         if self.ps.len() < 2 {
             return result;
@@ -77,6 +77,7 @@ impl<const N: usize> PolyLine<N> {
         for i in 0..self.ps.len() - 1 {
             result.push(LineSegment {
                 ps: [self.ps[i], self.ps[i + 1]],
+                attributes: (),
             });
         }
         result

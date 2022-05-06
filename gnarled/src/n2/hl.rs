@@ -32,7 +32,7 @@ pub trait Shading {
     async fn apply_async(
         &self,
         obj: &(dyn Shadable + Send + Sync),
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     );
 }
 
@@ -49,12 +49,12 @@ pub struct ShadingV0 {
 
 impl Bounds {
     //TODO: This is not working yet!
-    pub fn clip(&self, ls: LineSegment<2>) -> Option<LineSegment<2>> {
+    pub fn clip(&self, ls: LineSegment<2, ()>) -> Option<LineSegment<2, ()>> {
         Some(ls)
     }
 }
 
-pub fn clip_by_mask(lsx: LineSegment<2>, mask: &dyn Mask) -> LineSet {
+pub fn clip_by_mask(lsx: LineSegment<2, ()>, mask: &dyn Mask) -> LineSet {
     // For now we just do a linear split based on the values of the
     // end points. Later we might want to do something cleverer and
     // subdivide the line-segment if large.
@@ -92,7 +92,7 @@ impl Shading for ShadingV0 {
     async fn apply_async(
         &self,
         obj: &(dyn Shadable + Send + Sync),
-        consumer: Sender<LineSegment<2>>,
+        consumer: Sender<LineSegment<2, ()>>,
     ) {
         let bounds = obj.bounds();
         let s = self.d.map(|x| 1.0f32 / x);

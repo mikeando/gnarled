@@ -12,13 +12,16 @@ use self::merge_and_deduplicate::BinningLineMergerAndDeduplicator;
 use super::line_segment::LineSegment;
 
 pub struct LineMerger<const N: usize> {
-    pub input: Receiver<LineSegment<N>>,
-    pub output: Sender<LineSegment<N>>,
-    pub current_line: Option<LineSegment<N>>,
+    pub input: Receiver<LineSegment<N, ()>>,
+    pub output: Sender<LineSegment<N, ()>>,
+    pub current_line: Option<LineSegment<N, ()>>,
 }
 
 #[allow(non_snake_case)]
-fn merge<const N: usize>(ls1: &LineSegment<N>, ls2: &LineSegment<N>) -> Option<LineSegment<N>> {
+fn merge<const N: usize>(
+    ls1: &LineSegment<N, ()>,
+    ls2: &LineSegment<N, ()>,
+) -> Option<LineSegment<N, ()>> {
     let x0 = ls1.ps[0];
     let x1 = ls1.ps[1];
     let z = x1 - ls2.ps[0];
@@ -54,6 +57,7 @@ fn merge<const N: usize>(ls1: &LineSegment<N>, ls2: &LineSegment<N>) -> Option<L
         let x2_new = x0 + u * L;
         Some(LineSegment {
             ps: [ls1.ps[0], x2_new],
+            attributes: (),
         })
     } else {
         None
@@ -73,7 +77,10 @@ fn merge_pl<const N: usize>(pl1: &PolyLine<N>, pl2: &PolyLine<N>) -> Option<Poly
 }
 
 impl<const N: usize> LineMerger<N> {
-    pub fn new(input: Receiver<LineSegment<N>>, output: Sender<LineSegment<N>>) -> LineMerger<N> {
+    pub fn new(
+        input: Receiver<LineSegment<N, ()>>,
+        output: Sender<LineSegment<N, ()>>,
+    ) -> LineMerger<N> {
         LineMerger {
             input,
             output,
@@ -292,7 +299,7 @@ mod merge_and_deduplicate {
             }
         }
 
-        pub fn linesegment_to_npt_form(ls: LineSegment<N>) -> (Point<N>, Point<N>, (f32, f32)) {
+        pub fn linesegment_to_npt_form(ls: LineSegment<N, ()>) -> (Point<N>, Point<N>, (f32, f32)) {
             let n = (ls.ps[1] - ls.ps[0]).normalize();
             // p is the closest point on the line to the origin.
             let p = ls.ps[0] - n * n.dot(ls.ps[0]);
@@ -302,9 +309,10 @@ mod merge_and_deduplicate {
             (n, p, (t0, t1))
         }
 
-        pub fn npt_to_linesegment(n: Point<N>, p: Point<N>, ts: (f32, f32)) -> LineSegment<N> {
+        pub fn npt_to_linesegment(n: Point<N>, p: Point<N>, ts: (f32, f32)) -> LineSegment<N, ()> {
             let ls = LineSegment {
                 ps: [p + n * ts.0, p + n * ts.1],
+                attributes: (),
             };
             ls
         }
@@ -324,7 +332,7 @@ mod merge_and_deduplicate {
             (n, p)
         }
 
-        pub fn add_linesegment(&mut self, ls: LineSegment<N>) {
+        pub fn add_linesegment(&mut self, ls: LineSegment<N, ()>) {
             // Find the bin for the linesegment.
             let (n, p, ts) = Self::linesegment_to_npt_form(ls.clone());
             let bin_index = self.np_to_bin_index(n, p);
@@ -381,7 +389,7 @@ mod merge_and_deduplicate {
 
         pub async fn on_all_segments_async<F, R, E>(&self, mut f: F) -> Result<(), E>
         where
-            F: FnMut(LineSegment<N>) -> R,
+            F: FnMut(LineSegment<N, ()>) -> R,
             R: Future<Output = Result<(), E>>,
         {
             for (bin_index, v) in &self.entries {
@@ -394,6 +402,7 @@ mod merge_and_deduplicate {
                 for interval in &bin.intervals {
                     let ls = LineSegment {
                         ps: [interval.x0, interval.x1],
+                        attributes: (),
                     };
                     f(ls).await?;
                 }
@@ -403,7 +412,7 @@ mod merge_and_deduplicate {
 
         pub fn on_all_segments<F, E>(&self, mut f: F) -> Result<(), E>
         where
-            F: FnMut(LineSegment<N>) -> Result<(), E>,
+            F: FnMut(LineSegment<N, ()>) -> Result<(), E>,
         {
             for (bin_index, v) in &self.entries {
                 let bin = match v {
@@ -415,6 +424,7 @@ mod merge_and_deduplicate {
                 for interval in &bin.intervals {
                     let ls = LineSegment {
                         ps: [interval.x0, interval.x1],
+                        attributes: (),
                     };
                     f(ls)?;
                 }
@@ -424,15 +434,15 @@ mod merge_and_deduplicate {
     }
 
     pub struct BinningLineMergerAndDeduplicator<const N: usize> {
-        pub input: Receiver<LineSegment<N>>,
-        pub output: Sender<LineSegment<N>>,
+        pub input: Receiver<LineSegment<N, ()>>,
+        pub output: Sender<LineSegment<N, ()>>,
         pub core: DeduplicatorCore<N>,
     }
 
     impl<const N: usize> BinningLineMergerAndDeduplicator<N> {
         pub fn new(
-            input: Receiver<LineSegment<N>>,
-            output: Sender<LineSegment<N>>,
+            input: Receiver<LineSegment<N, ()>>,
+            output: Sender<LineSegment<N, ()>>,
             n_scale: f32,
             p_scale: f32,
         ) -> Self {
@@ -457,16 +467,16 @@ mod merge_and_deduplicate {
 }
 
 pub struct BinningLineMerger<const N: usize> {
-    pub input: Receiver<LineSegment<N>>,
-    pub output: Sender<LineSegment<N>>,
-    pub entries: Vec<Option<LineSegment<N>>>,
+    pub input: Receiver<LineSegment<N, ()>>,
+    pub output: Sender<LineSegment<N, ()>>,
+    pub entries: Vec<Option<LineSegment<N, ()>>>,
     pub nodes: HashMap<[usize; N], Vec<Option<(StartOrEnd, usize)>>>,
 }
 
 impl<const N: usize> BinningLineMerger<N> {
     pub fn new(
-        input: Receiver<LineSegment<N>>,
-        output: Sender<LineSegment<N>>,
+        input: Receiver<LineSegment<N, ()>>,
+        output: Sender<LineSegment<N, ()>>,
     ) -> BinningLineMerger<N> {
         BinningLineMerger {
             input,
@@ -556,7 +566,7 @@ impl<const N: usize> BinningLineMerger<N> {
 }
 
 pub struct BinningPolyLineMerger<const N: usize> {
-    pub input: Receiver<LineSegment<N>>,
+    pub input: Receiver<LineSegment<N, ()>>,
     pub output: Sender<PolyLine<N>>,
     pub entries: Vec<Option<PolyLine<N>>>,
     pub nodes: HashMap<[usize; N], Vec<Option<(StartOrEnd, usize)>>>,
@@ -564,7 +574,7 @@ pub struct BinningPolyLineMerger<const N: usize> {
 
 impl<const N: usize> BinningPolyLineMerger<N> {
     pub fn new(
-        input: Receiver<LineSegment<N>>,
+        input: Receiver<LineSegment<N, ()>>,
         output: Sender<PolyLine<N>>,
     ) -> BinningPolyLineMerger<N> {
         BinningPolyLineMerger {
@@ -667,7 +677,10 @@ pub struct MegaMerger<const N: usize> {
 }
 
 impl<const N: usize> MegaMerger<N> {
-    pub fn new(output_a: Receiver<LineSegment<N>>, input_d: Sender<PolyLine<N>>) -> MegaMerger<N> {
+    pub fn new(
+        output_a: Receiver<LineSegment<N, ()>>,
+        input_d: Sender<PolyLine<N>>,
+    ) -> MegaMerger<N> {
         let (input_b, output_b) = channel(100);
         let (input_c, output_c) = channel(100);
 
@@ -711,6 +724,7 @@ pub mod tests {
             let mut deduplicator: DeduplicatorCore<2> = DeduplicatorCore::new(600.0, 20.0);
             let linesegment = LineSegment {
                 ps: [p2(50.0, 50.0), p2(51.0, 50.0)],
+                attributes: (),
             };
             for l in linesegment.nsplit(10) {
                 deduplicator.add_linesegment(l);
@@ -731,6 +745,7 @@ pub mod tests {
             let mut deduplicator: DeduplicatorCore<2> = DeduplicatorCore::new(600.0, 20.0);
             let linesegment = LineSegment {
                 ps: [p2(50.0, 50.0), p2(50.0, 51.0)],
+                attributes: (),
             };
             for l in linesegment.nsplit(10) {
                 deduplicator.add_linesegment(l);
