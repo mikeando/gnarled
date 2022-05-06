@@ -9,6 +9,7 @@ edition = "2021"
 nalgebra = "0.30.1"
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1.52"
+rand = "0.8"
 
 [lib]
 name = "gnarled"
