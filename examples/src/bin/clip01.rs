@@ -16,20 +16,26 @@ pub fn main() -> Result<(), std::io::Error> {
     )?;
     PolyLine {
         ps: vec![p2(0.0, 400.0), p2(800.0, 400.0)],
+        attributes: (),
     }
     .to_svg(&mut f)?;
     PolyLine {
         ps: vec![p2(0.0, 0.0), p2(800.0, 0.0)],
+        attributes: (),
     }
     .to_svg(&mut f)?;
     PolyLine {
         ps: vec![p2(0.0, 800.0), p2(800.0, 800.0)],
+        attributes: (),
     }
     .to_svg(&mut f)?;
 
     let ys = &[0.0f32, 200.0, 600.0, 800.0];
+
+    //TODO: Move the properties into the attributes part.
     PolyLine {
         ps: ys.iter().map(|y| p2(300.0, *y)).collect(),
+        attributes: (),
     }
     .clip_by(p2(0.0, 1.0), 400.0)
     .to_svg_with_properties(
@@ -40,6 +46,7 @@ pub fn main() -> Result<(), std::io::Error> {
     )?;
     PolyLine {
         ps: ys.iter().map(|y| p2(500.0, 800.0 - *y)).collect(),
+        attributes: (),
     }
     .clip_by(p2(0.0, 1.0), 400.0)
     .to_svg_with_properties(

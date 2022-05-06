@@ -107,13 +107,11 @@ pub async fn async_main() -> Result<(), Error> {
             Point::from([0.0, 800.0]),
             Point::from([0.0, 0.0]),
         ],
-    }
-    .to_svg_with_properties(
-        ff.lock().unwrap().deref_mut(),
-        PolyLineProperties {
+        attributes: PolyLineProperties {
             stroke: PolyLineStroke::Red,
         },
-    )
+    }
+    .to_svg(ff.lock().unwrap().deref_mut())
     .unwrap();
 
     writeln!(ff.lock().unwrap().deref_mut(), "</svg>")?;

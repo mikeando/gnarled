@@ -19,7 +19,7 @@ pub struct Ray {
 
 #[async_trait]
 pub trait Shape: Send + Sync + std::fmt::Debug {
-    fn paths(&self) -> Vec<PolyLine<3>>;
+    fn paths(&self) -> Vec<PolyLine<3, ()>>;
     fn intersect(&self, ray: &Ray) -> Option<Hit>;
     fn contains(&self, x: Point<3>, tol: f32) -> bool;
     fn bounds(&self) -> Bounds<3>;
@@ -40,45 +40,57 @@ pub struct AABox {
 
 #[async_trait]
 impl Shape for AABox {
-    fn paths(&self) -> Vec<PolyLine<3>> {
+    fn paths(&self) -> Vec<PolyLine<3, ()>> {
         let Point { vs: [x1, y1, z1] } = self.bounds.min;
         let Point { vs: [x2, y2, z2] } = self.bounds.max;
         vec![
             PolyLine {
                 ps: vec![p3(x1, y1, z1), p3(x1, y1, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y1, z1), p3(x1, y2, z1)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y1, z1), p3(x2, y1, z1)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y1, z2), p3(x1, y2, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y1, z2), p3(x2, y1, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y2, z1), p3(x1, y2, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y2, z1), p3(x2, y2, z1)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x1, y2, z2), p3(x2, y2, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x2, y1, z1), p3(x2, y1, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x2, y1, z1), p3(x2, y2, z1)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x2, y1, z2), p3(x2, y2, z2)],
+                attributes: (),
             },
             PolyLine {
                 ps: vec![p3(x2, y2, z1), p3(x2, y2, z2)],
+                attributes: (),
             },
         ]
     }
@@ -175,7 +187,7 @@ pub struct Sphere {
 
 #[async_trait]
 impl Shape for Sphere {
-    fn paths(&self) -> Vec<PolyLine<3>> {
+    fn paths(&self) -> Vec<PolyLine<3, ()>> {
         let mut result = vec![];
         let nz = 20;
         let ns = 80;
@@ -190,7 +202,7 @@ impl Shape for Sphere {
                 .map(|i| 2.0 * std::f32::consts::PI * (i as f32) / (ns as f32))
                 .map(|th| self.center + p3(r * th.cos(), r * th.sin(), z))
                 .collect();
-            result.push(PolyLine { ps });
+            result.push(PolyLine { ps, attributes: () });
         }
         result
     }

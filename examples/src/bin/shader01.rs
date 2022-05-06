@@ -102,7 +102,7 @@ pub async fn async_main() -> Result<(), Error> {
         .map(|i| (i as f32) * 2.0f32 * std::f32::consts::PI / 100.0f32)
         .map(|t| p2((400.0 * t.cos()) + 400.0, (400.0 * t.sin()) + 400.0))
         .collect::<Vec<_>>();
-    let p = PolyLine { ps };
+    let p = PolyLine { ps, attributes: () };
     p.to_svg(ff.lock().unwrap().deref_mut())?;
 
     writeln!(ff.lock().unwrap().deref_mut(), "</svg>")?;

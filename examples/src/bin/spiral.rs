@@ -13,7 +13,7 @@ fn main() -> Result<(), std::io::Error> {
         .map(|i| (i as f32) * 4.0f32 * std::f32::consts::PI / 100.0f32)
         .map(|t| p2((t * t.cos()) * 40.0, (t * t.sin()) * 40.0))
         .collect::<Vec<_>>();
-    let p = PolyLine { ps };
+    let p = PolyLine { ps, attributes: () };
     let _bb = p.bounds().unwrap();
     let p = p.shift_by(p2(400., 400.));
     writeln!(
@@ -35,6 +35,7 @@ fn main() -> Result<(), std::io::Error> {
         let y = 100.0 + dy * (0.5 + i as f32);
         let pr = PolyLine {
             ps: (0..800).step_by(10).map(|x| p2(x as f32, y)).collect(),
+            attributes: (),
         };
         horz_lines.lines.push(pr);
     }
@@ -45,6 +46,7 @@ fn main() -> Result<(), std::io::Error> {
         let x = 100.0 + dx * (0.5 + i as f32);
         let pr = PolyLine {
             ps: (0..800).step_by(10).map(|y| p2(x, y as f32)).collect(),
+            attributes: (),
         };
         vert_lines.lines.push(pr);
     }

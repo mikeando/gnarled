@@ -1,10 +1,13 @@
 use crate::n2::{point::Point, traits::Rotatable};
 
-pub type PolyLine = crate::nbase::polyline::PolyLine<2>;
+pub type PolyLine<A> = crate::nbase::polyline::PolyLine<2, A>;
 
-impl Rotatable for PolyLine {
-    type Result = PolyLine;
-    fn rotate_by(&self, radians: f32, Point { vs: [cx, cy] }: Point) -> PolyLine {
+impl<A> Rotatable for PolyLine<A>
+where
+    A: Clone,
+{
+    type Result = PolyLine<A>;
+    fn rotate_by(&self, radians: f32, Point { vs: [cx, cy] }: Point) -> PolyLine<A> {
         PolyLine {
             ps: self
                 .ps
@@ -21,6 +24,7 @@ impl Rotatable for PolyLine {
                     }
                 })
                 .collect(),
+            attributes: self.attributes.clone(),
         }
     }
 }

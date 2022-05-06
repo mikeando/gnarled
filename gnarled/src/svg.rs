@@ -2,8 +2,9 @@ use std::fmt::Display;
 
 use crate::{
     attributes::AttributeSVGLine,
-    n2::{cubic_bezier::CubicBezierPath, lineset::LineSet, polyline::PolyLine},
+    n2::{cubic_bezier::CubicBezierPath, lineset::LineSet},
     nbase::line_segment::LineSegment,
+    nbase::polyline::PolyLine,
 };
 
 pub trait SVGable {
@@ -83,7 +84,7 @@ pub struct PolyLineProperties {
     pub stroke: PolyLineStroke,
 }
 
-impl PolyLine {
+impl PolyLine<2, ()> {
     pub fn to_svg_with_properties<W>(
         &self,
         w: &mut W,
@@ -92,13 +93,25 @@ impl PolyLine {
     where
         W: std::io::Write,
     {
+        self.map_attribute(|_| props).to_svg(w)
+    }
+}
+
+impl<A> SVGable for PolyLine<2, A>
+where
+    A: AttributeSVGLine,
+{
+    fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
+    where
+        W: std::io::Write,
+    {
         if self.ps.len() <= 1 {
             return Ok(());
         }
         writeln!(
             w,
-            r#"<path stroke="{}" fill="transparent" d=""#,
-            props.stroke
+            r#"<path {} fill="transparent" d=""#,
+            self.attributes.line_attributes()
         )?;
         writeln!(w, "M {:.2},{:.2}", self.ps[0].vs[0], self.ps[0].vs[1])?;
         for pp in &self.ps[1..] {
@@ -107,15 +120,6 @@ impl PolyLine {
         writeln!(w, r#""/>"#)?;
 
         Ok(())
-    }
-}
-
-impl SVGable for PolyLine {
-    fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
-    where
-        W: std::io::Write,
-    {
-        self.to_svg_with_properties(w, PolyLineProperties::default())
     }
 }
 

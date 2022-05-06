@@ -5,7 +5,7 @@ use crate::nbase::traits::*;
 
 #[derive(Clone)]
 pub struct LineSet<const N: usize> {
-    pub lines: Vec<PolyLine<N>>,
+    pub lines: Vec<PolyLine<N, ()>>,
 }
 
 impl<const N: usize> LineSet<N> {

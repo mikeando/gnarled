@@ -33,6 +33,7 @@ pub fn main() -> Result<(), std::io::Error> {
     for i in 0..5 {
         PolyLine {
             ps: vec![p2(0.0, 0.0), s1.value(i as f32 * dt)],
+            attributes: (),
         }
         .to_svg(&mut f)?;
     }

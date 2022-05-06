@@ -58,9 +58,10 @@ impl Triangle {
     }
 }
 
-pub fn to_polyline(t: Triangle) -> gnarled::nbase::polyline::PolyLine<2> {
+pub fn to_polyline(t: Triangle) -> gnarled::nbase::polyline::PolyLine<2, ()> {
     PolyLine {
         ps: vec![t.vertices[0], t.vertices[1], t.vertices[2], t.vertices[0]],
+        attributes: (),
     }
 }
 

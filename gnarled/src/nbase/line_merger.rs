@@ -64,7 +64,10 @@ fn merge<const N: usize>(
     }
 }
 
-fn merge_pl<const N: usize>(pl1: &PolyLine<N>, pl2: &PolyLine<N>) -> Option<PolyLine<N>> {
+fn merge_pl<const N: usize>(
+    pl1: &PolyLine<N, ()>,
+    pl2: &PolyLine<N, ()>,
+) -> Option<PolyLine<N, ()>> {
     let z = *pl1.ps.last().unwrap() - *pl2.ps.first().unwrap();
     let z2 = z.dot(z);
     if z2 > 0.01 {
@@ -73,6 +76,7 @@ fn merge_pl<const N: usize>(pl1: &PolyLine<N>, pl2: &PolyLine<N>) -> Option<Poly
 
     return Some(PolyLine {
         ps: pl1.ps.iter().chain(pl2.ps[1..].iter()).cloned().collect(),
+        attributes: (),
     });
 }
 
@@ -567,15 +571,15 @@ impl<const N: usize> BinningLineMerger<N> {
 
 pub struct BinningPolyLineMerger<const N: usize> {
     pub input: Receiver<LineSegment<N, ()>>,
-    pub output: Sender<PolyLine<N>>,
-    pub entries: Vec<Option<PolyLine<N>>>,
+    pub output: Sender<PolyLine<N, ()>>,
+    pub entries: Vec<Option<PolyLine<N, ()>>>,
     pub nodes: HashMap<[usize; N], Vec<Option<(StartOrEnd, usize)>>>,
 }
 
 impl<const N: usize> BinningPolyLineMerger<N> {
     pub fn new(
         input: Receiver<LineSegment<N, ()>>,
-        output: Sender<PolyLine<N>>,
+        output: Sender<PolyLine<N, ()>>,
     ) -> BinningPolyLineMerger<N> {
         BinningPolyLineMerger {
             input,
@@ -589,6 +593,7 @@ impl<const N: usize> BinningPolyLineMerger<N> {
         while let Some(ls) = self.input.recv().await {
             let mut pl = PolyLine {
                 ps: vec![ls.ps[0], ls.ps[1]],
+                attributes: (),
             };
 
             // Find the bin for the start vertex
@@ -679,7 +684,7 @@ pub struct MegaMerger<const N: usize> {
 impl<const N: usize> MegaMerger<N> {
     pub fn new(
         output_a: Receiver<LineSegment<N, ()>>,
-        input_d: Sender<PolyLine<N>>,
+        input_d: Sender<PolyLine<N, ()>>,
     ) -> MegaMerger<N> {
         let (input_b, output_b) = channel(100);
         let (input_c, output_c) = channel(100);

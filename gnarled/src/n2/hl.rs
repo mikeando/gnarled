@@ -64,6 +64,7 @@ pub fn clip_by_mask(lsx: LineSegment<2, ()>, mask: &dyn Mask) -> LineSet {
         LineSet {
             lines: vec![PolyLine {
                 ps: vec![lsx.ps[0], lsx.ps[1]],
+                attributes: (),
             }],
         }
     } else if (m0 < 0.0) && (m1 < 0.0) {
@@ -74,6 +75,7 @@ pub fn clip_by_mask(lsx: LineSegment<2, ()>, mask: &dyn Mask) -> LineSet {
         LineSet {
             lines: vec![PolyLine {
                 ps: vec![lsx.ps[0], p],
+                attributes: (),
             }],
         }
     } else {
@@ -82,6 +84,7 @@ pub fn clip_by_mask(lsx: LineSegment<2, ()>, mask: &dyn Mask) -> LineSet {
         LineSet {
             lines: vec![PolyLine {
                 ps: vec![p, lsx.ps[1]],
+                attributes: (),
             }],
         }
     }
