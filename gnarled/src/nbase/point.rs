@@ -353,3 +353,15 @@ pub fn point_extrema<const N: usize, F: Float>(
         Some(Bounds { min: *s, max: *s })
     }
 }
+
+impl<F: Float> Point<3, F> {
+    pub fn cross(self, rhs: Point<3, F>) -> Point<3, F> {
+        Point {
+            vs: [
+                self.vs[1] * rhs.vs[2] - self.vs[2] * rhs.vs[1],
+                self.vs[2] * rhs.vs[0] - self.vs[0] * rhs.vs[2],
+                self.vs[0] * rhs.vs[1] - self.vs[1] * rhs.vs[0],
+            ],
+        }
+    }
+}
