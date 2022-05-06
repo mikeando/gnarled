@@ -146,16 +146,32 @@ impl SVGable for LineSet {
     }
 }
 
+impl LineSegment<2> {
+    pub fn to_svg_with_properties<W>(
+        &self,
+        w: &mut W,
+        props: PolyLineProperties,
+    ) -> Result<(), std::io::Error>
+    where
+        W: std::io::Write,
+    {
+        write!(
+            w,
+            r#"<path stroke="{}" fill="transparent" d=""#,
+            props.stroke
+        )?;
+        write!(w, "M {:.2},{:.2} ", self.ps[0].vs[0], self.ps[0].vs[1])?;
+        write!(w, "L {:.2},{:.2}", self.ps[1].vs[0], self.ps[1].vs[1])?;
+        writeln!(w, r#""/>"#)?;
+        Ok(())
+    }
+}
+
 impl SVGable for LineSegment<2> {
     fn to_svg<W>(&self, w: &mut W) -> Result<(), std::io::Error>
     where
         W: std::io::Write,
     {
-        write!(w, r#"<path stroke="black" fill="transparent" d=""#,)?;
-        write!(w, "M {:.2},{:.2} ", self.ps[0].vs[0], self.ps[0].vs[1])?;
-        write!(w, "L {:.2},{:.2}", self.ps[1].vs[0], self.ps[1].vs[1])?;
-        writeln!(w, r#""/>"#)?;
-
-        Ok(())
+        self.to_svg_with_properties(w, PolyLineProperties::default())
     }
 }
