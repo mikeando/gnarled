@@ -8,7 +8,7 @@ use crate::n2::bounds::Bounds;
 use crate::n2::lineset::LineSet;
 use crate::n2::point::Point;
 use crate::n2::polyline::PolyLine;
-use crate::nbase::polyline::LineSegment;
+use crate::nbase::line_segment::LineSegment;
 use crate::svg::SVGable;
 
 use crate::n2::point::p2;

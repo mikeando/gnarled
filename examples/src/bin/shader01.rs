@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex};
 
-use gnarled::nbase::polyline::{LineSegment, PolyLine};
+use gnarled::nbase::line_segment::LineSegment;
+use gnarled::nbase::polyline::PolyLine;
+
 use gnarled::svg::SVGable;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 

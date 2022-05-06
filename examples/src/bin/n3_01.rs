@@ -2,8 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use gnarled::n2::polyline::PolyLine;
 use gnarled::nbase::line_merger::MegaMerger;
+use gnarled::nbase::line_segment::LineSegment;
 use gnarled::nbase::point::Point;
-use gnarled::nbase::polyline::LineSegment;
 
 use gnarled::svg::SVGable;
 

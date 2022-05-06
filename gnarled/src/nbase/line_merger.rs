@@ -9,7 +9,7 @@ use crate::nbase::polyline::PolyLine;
 
 use self::merge_and_deduplicate::BinningLineMergerAndDeduplicator;
 
-use super::polyline::LineSegment;
+use super::line_segment::LineSegment;
 
 pub struct LineMerger<const N: usize> {
     pub input: Receiver<LineSegment<N>>,
@@ -702,7 +702,7 @@ pub mod tests {
                 line_merger::merge_and_deduplicate::{
                     BinningLineMergerAndDeduplicator, DeduplicatorCore,
                 },
-                polyline::LineSegment,
+                line_segment::LineSegment,
             },
         };
 

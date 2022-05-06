@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::{
     n2::{cubic_bezier::CubicBezierPath, lineset::LineSet, polyline::PolyLine},
-    nbase::polyline::LineSegment,
+    nbase::line_segment::LineSegment,
 };
 
 pub trait SVGable {

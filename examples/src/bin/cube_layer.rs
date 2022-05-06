@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use gnarled::n2::polyline::PolyLine;
 use gnarled::nbase::bounds::Bounds;
 use gnarled::nbase::line_merger::MegaMerger;
-use gnarled::nbase::polyline::LineSegment;
+use gnarled::nbase::line_segment::LineSegment;
 
 use gnarled::svg::SVGable;
 

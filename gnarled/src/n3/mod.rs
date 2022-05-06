@@ -1,7 +1,7 @@
 use crate::{
     n2::point::p2,
     n3::shape::Ray,
-    nbase::{bounds::Bounds, lineset::LineSet, point::Point, polyline::LineSegment},
+    nbase::{bounds::Bounds, line_segment::LineSegment, lineset::LineSet, point::Point},
 };
 
 use self::shape::Shape;

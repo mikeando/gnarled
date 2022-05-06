@@ -4,7 +4,7 @@ use tokio::sync::mpsc::Sender;
 use crate::nbase::bounds::Bounds;
 use crate::nbase::point::Point;
 use crate::nbase::polyline::PolyLine;
-use crate::{n3::p3, nbase::polyline::LineSegment};
+use crate::{n3::p3, nbase::line_segment::LineSegment};
 
 use super::{Camera, OcclusionInfo};
 
