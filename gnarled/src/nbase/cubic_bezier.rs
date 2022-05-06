@@ -47,6 +47,11 @@ where
         let b = cubic_basis(t);
         self.ps[0] * b[0] + self.ps[1] * b[1] + self.ps[2] * b[2] + self.ps[3] * b[3]
     }
+
+    pub fn derivative(&self, t: F) -> Point<N, F> {
+        let db = cubic_basis_deriv(t);
+        self.ps[0] * db[0] + self.ps[1] * db[1] + self.ps[2] * db[2] + self.ps[3] * db[3]
+    }
 }
 
 #[inline]
@@ -58,6 +63,22 @@ pub fn cubic_basis<F: Float>(t: F) -> [F; 4] {
     let mt2 = mt * mt;
     let mt3 = mt2 * mt;
     [mt3, c3 * mt2 * t, c3 * mt * t2, t3]
+}
+
+#[inline]
+pub fn cubic_basis_deriv<F: Float>(t: F) -> [F; 4] {
+    let c1 = F::from_f64(1.0);
+    let c2 = F::from_f64(2.0);
+    let c3 = F::from_f64(3.0);
+    let t2 = t * t;
+    let mt = F::one() - t;
+    let mt2 = mt * mt;
+    [
+        -c3 * mt2,
+        c3 * mt * (c1 - c3 * t),
+        c3 * t * (c2 - c3 * t),
+        c3 * t2,
+    ]
 }
 
 // Number of points should be 3*n+1 for some n
