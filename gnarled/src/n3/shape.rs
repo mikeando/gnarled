@@ -84,12 +84,24 @@ impl Shape for AABox {
     }
 
     fn intersect(&self, ray: &Ray) -> Option<Hit> {
+        // We consider the AABB as the intersection of
+        // three slabs, one in each direction.
+
+        // Times when the ray hits the three planes through the min
         let n: Point<3> = (self.bounds.min - ray.origin) / ray.direction;
+        // Times when the ray hits the three planes through the max
         let f: Point<3> = (self.bounds.max - ray.origin) / ray.direction;
-        let n = Point::componentwise_min(f, n);
-        let f = Point::componentwise_max(f, n);
-        let t0 = n.max();
-        let t1 = f.min();
+
+        // Times when the ray enters the slabs in each direction
+        let nn = Point::componentwise_min(f, n);
+        // Times when the ray leaves the slabs
+        let ff = Point::componentwise_max(f, n);
+
+        // the time we hit the box is after we've hit all the slabs
+        let t0 = nn.max();
+        // the time we leave the box is after we've left any the slabs
+        let t1 = ff.min();
+
         if t0 < 1e-3 && t1 > 1e-3 {
             return Some(Hit(self, t1));
         }
