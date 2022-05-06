@@ -9,7 +9,8 @@ use gnarled::svg::SVGable;
 
 use gnarled::n3::Camera;
 use gnarled::svg::{PolyLineProperties, PolyLineStroke};
-use rand::Rng;
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64Mcg;
 use tokio::sync::mpsc::channel;
 use tokio::sync::mpsc::error::SendError;
 use tokio::task::{JoinError, JoinHandle};
@@ -54,7 +55,7 @@ pub async fn async_main() -> Result<(), Error> {
     use std::io::Write;
     use std::ops::DerefMut;
 
-    let mut rng = rand::thread_rng();
+    let mut rng: Pcg64Mcg = Pcg64Mcg::seed_from_u64(11);
 
     let file_name = "cube_layer.svg";
     let f = std::fs::File::create(file_name).unwrap();
