@@ -18,7 +18,7 @@ pub struct Ray {
 }
 
 #[async_trait]
-pub trait Shape: Send + Sync {
+pub trait Shape: Send + Sync + std::fmt::Debug {
     fn paths(&self) -> Vec<PolyLine<3>>;
     fn intersect(&self, ray: &Ray) -> Option<Hit>;
     fn contains(&self, x: Point<3>, tol: f32) -> bool;
@@ -33,6 +33,7 @@ pub trait Shape: Send + Sync {
     ) -> Result<(), std::io::Error>;
 }
 
+#[derive(Debug)]
 pub struct AABox {
     pub bounds: Bounds<3>,
 }
@@ -154,6 +155,7 @@ impl Shape for AABox {
     }
 }
 
+#[derive(Debug)]
 pub struct Sphere {
     pub center: Point<3>,
     pub radius: f32,
