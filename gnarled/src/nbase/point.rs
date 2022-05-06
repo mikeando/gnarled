@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Div, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
 
 use crate::nbase::bounds::Bounds;
 pub trait Float:
@@ -338,6 +338,14 @@ impl<const N: usize, F: Float> AddAssign<Point<N, F>> for Point<N, F> {
         for i in 0..N {
             self.vs[i] += rhs.vs[i];
         }
+    }
+}
+
+impl<const N: usize, F: Float> Neg for Point<N, F> {
+    type Output = Point<N, F>;
+
+    fn neg(self) -> Self::Output {
+        self.map(|x| -x)
     }
 }
 

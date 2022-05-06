@@ -3,7 +3,7 @@ use crate::nbase::lineset::LineSet;
 use crate::nbase::point::Point;
 use crate::nbase::traits::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LineSegment<const N: usize> {
     pub ps: [Point<N>; 2],
 }
@@ -28,6 +28,21 @@ impl<const N: usize> LineSegment<N> {
                 ps: [mp, self.ps[1]],
             },
         )
+    }
+
+    pub(crate) fn nsplit(&self, n: usize) -> Vec<LineSegment<N>> {
+        let inv_n: f32 = 1.0 / (n as f32);
+        (0..n)
+            .map(|i| {
+                let ii = i as f32;
+                LineSegment {
+                    ps: [
+                        Point::lerp(ii * inv_n, self.ps[0], self.ps[1]),
+                        Point::lerp((ii + 1.0) * inv_n, self.ps[0], self.ps[1]),
+                    ],
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn reverse(&self) -> LineSegment<N> {
