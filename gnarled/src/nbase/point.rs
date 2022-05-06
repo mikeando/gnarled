@@ -1,19 +1,35 @@
-use std::ops::{Add, Div, Mul, Sub, AddAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Sub};
 
 use crate::nbase::bounds::Bounds;
-pub trait Float : Sized + Copy + std::ops::Add<Output = Self> + std::ops::Sub<Output=Self> + std::ops::AddAssign + std::cmp::PartialEq + std::ops::Neg<Output = Self> + std::ops::Mul<Output = Self> + std::iter::Sum + Default + std::ops::Div<Output = Self> + std::fmt::Debug + std::fmt::Display + std::cmp::PartialOrd + std::ops::MulAssign {
+pub trait Float:
+    Sized
+    + Copy
+    + std::ops::Add<Output = Self>
+    + std::ops::Sub<Output = Self>
+    + std::ops::AddAssign
+    + std::cmp::PartialEq
+    + std::ops::Neg<Output = Self>
+    + std::ops::Mul<Output = Self>
+    + std::iter::Sum
+    + Default
+    + std::ops::Div<Output = Self>
+    + std::fmt::Debug
+    + std::fmt::Display
+    + std::cmp::PartialOrd
+    + std::ops::MulAssign
+{
     fn zero() -> Self;
     fn one() -> Self;
-    fn powi(self, i:i32) -> Self;
+    fn powi(self, i: i32) -> Self;
     fn sqrt(self) -> Self;
     fn abs(self) -> Self;
     fn nan() -> Self;
-    fn min(a:Self, b:Self) -> Self;
-    fn max(a:Self, b:Self) -> Self;
+    fn min(a: Self, b: Self) -> Self;
+    fn max(a: Self, b: Self) -> Self;
     fn ln(self) -> Self;
     fn ceil(self) -> Self;
-    fn from_f64(f:f64) -> Self;
-    fn clamp(self, a:Self, b:Self) -> Self;
+    fn from_f64(f: f64) -> Self;
+    fn clamp(self, a: Self, b: Self) -> Self;
     fn as_f64(self) -> f64;
 }
 
@@ -26,7 +42,7 @@ impl Float for f32 {
         1.0
     }
 
-    fn powi(self, i:i32) -> Self {
+    fn powi(self, i: i32) -> Self {
         f32::powi(self, i)
     }
 
@@ -42,11 +58,11 @@ impl Float for f32 {
         f32::NAN
     }
 
-    fn min(a:Self, b:Self) -> Self {
+    fn min(a: Self, b: Self) -> Self {
         f32::min(a, b)
     }
 
-    fn max(a:Self, b:Self) -> Self {
+    fn max(a: Self, b: Self) -> Self {
         f32::max(a, b)
     }
 
@@ -58,12 +74,12 @@ impl Float for f32 {
         f32::ceil(self)
     }
 
-    fn from_f64(f:f64) -> Self {
+    fn from_f64(f: f64) -> Self {
         f as f32
     }
 
-    fn clamp(self, a:Self, b:Self) -> Self {
-        f32::clamp(self,a,b)
+    fn clamp(self, a: Self, b: Self) -> Self {
+        f32::clamp(self, a, b)
     }
 
     fn as_f64(self) -> f64 {
@@ -80,7 +96,7 @@ impl Float for f64 {
         1.0
     }
 
-    fn powi(self, i:i32) -> Self {
+    fn powi(self, i: i32) -> Self {
         f64::powi(self, i)
     }
 
@@ -96,11 +112,11 @@ impl Float for f64 {
         f64::NAN
     }
 
-    fn min(a:Self, b:Self) -> Self {
+    fn min(a: Self, b: Self) -> Self {
         f64::min(a, b)
     }
 
-    fn max(a:Self, b:Self) -> Self {
+    fn max(a: Self, b: Self) -> Self {
         f64::max(a, b)
     }
 
@@ -112,12 +128,12 @@ impl Float for f64 {
         f64::ceil(self)
     }
 
-    fn from_f64(f:f64) -> Self {
+    fn from_f64(f: f64) -> Self {
         f
     }
 
-    fn clamp(self, a:Self, b:Self) -> Self {
-        f64::clamp(self,a,b)
+    fn clamp(self, a: Self, b: Self) -> Self {
+        f64::clamp(self, a, b)
     }
 
     fn as_f64(self) -> f64 {
@@ -126,11 +142,11 @@ impl Float for f64 {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Point<const N: usize, F=f32> {
+pub struct Point<const N: usize, F = f32> {
     pub vs: [F; N],
 }
 
-// calculate the distance between points 
+// calculate the distance between points
 pub fn distance<const N: usize, F>(a: Point<N, F>, b: Point<N, F>) -> F
 where
     F: Float,
@@ -141,7 +157,6 @@ where
     }
     d.sqrt()
 }
-
 
 impl<const N: usize, F> Default for Point<N, F>
 where
@@ -166,10 +181,7 @@ where
     }
 }
 
-impl<const N: usize, F> Eq for Point<N, F>
-where
-    F: Float,
-{}
+impl<const N: usize, F> Eq for Point<N, F> where F: Float {}
 
 fn bimap<A, B, F, C, const N: usize>(a: &[A; N], b: &[B; N], f: F) -> [C; N]
 where
@@ -187,9 +199,8 @@ where
 
 impl<const N: usize, F> Point<N, F>
 where
-    F: Float
+    F: Float,
 {
-
     pub fn zero() -> Self {
         Self { vs: [F::zero(); N] }
     }
@@ -200,7 +211,7 @@ where
         }
     }
 
-    pub fn dot(&self, n: Point<N,F>) -> F {
+    pub fn dot(&self, n: Point<N, F>) -> F {
         IntoIterator::into_iter(self.vs)
             .zip(IntoIterator::into_iter(n.vs))
             .map(|(a, b)| a * b)
@@ -218,15 +229,15 @@ where
         }
     }
 
-    pub fn lerp(alpha: F, a: Point<N,F>, b: Point<N,F>) -> Point<N,F> {
+    pub fn lerp(alpha: F, a: Point<N, F>, b: Point<N, F>) -> Point<N, F> {
         Point::axby(F::one() - alpha, a, alpha, b)
     }
 
-    pub fn axby(a: F, x: Point<N,F>, b: F, y: Point<N,F>) -> Point<N,F> {
+    pub fn axby(a: F, x: Point<N, F>, b: F, y: Point<N, F>) -> Point<N, F> {
         Point::bimap(x, y, |x, y| a * x + b * y)
     }
 
-    pub fn abs(&self) -> Point<N,F> {
+    pub fn abs(&self) -> Point<N, F> {
         Point {
             vs: self.vs.map(|a| a.abs()),
         }
@@ -249,15 +260,15 @@ where
         sum
     }
 
-    pub fn map<FF, G>(self, f: FF) -> Point<N,G>
+    pub fn map<FF, G>(self, f: FF) -> Point<N, G>
     where
         FF: Fn(F) -> G,
-        G: Float
+        G: Float,
     {
         Point { vs: self.vs.map(f) }
     }
 
-    pub fn bimap<FF>(a: Point<N,F>, b: Point<N,F>, f: FF) -> Point<N,F>
+    pub fn bimap<FF>(a: Point<N, F>, b: Point<N, F>, f: FF) -> Point<N, F>
     where
         FF: Fn(F, F) -> F,
     {
@@ -281,7 +292,7 @@ where
 
 impl<const N: usize, F> Mul<F> for Point<N, F>
 where
-    F: Float
+    F: Float,
 {
     type Output = Point<N, F>;
     fn mul(self, s: F) -> Self::Output {
@@ -291,7 +302,7 @@ where
 
 impl<const N: usize, F> Mul<Point<N, F>> for Point<N, F>
 where
-    F: Float
+    F: Float,
 {
     type Output = Point<N, F>;
     fn mul(self, rhs: Point<N, F>) -> Self::Output {
@@ -299,18 +310,17 @@ where
     }
 }
 
-impl<const N: usize,F: Float> Div<Point<N,F>> for Point<N,F>
-{
-    type Output = Point<N,F>;
-    fn div(self, rhs: Point<N,F>) -> Self::Output {
+impl<const N: usize, F: Float> Div<Point<N, F>> for Point<N, F> {
+    type Output = Point<N, F>;
+    fn div(self, rhs: Point<N, F>) -> Self::Output {
         Point::bimap(self, rhs, |a, b| a / b)
     }
 }
 
-impl<const N: usize, F: Float> Add<Point<N,F>> for Point<N,F> {
-    type Output = Point<N,F>;
+impl<const N: usize, F: Float> Add<Point<N, F>> for Point<N, F> {
+    type Output = Point<N, F>;
 
-    fn add(self, rhs: Point<N,F>) -> Self::Output {
+    fn add(self, rhs: Point<N, F>) -> Self::Output {
         Point::bimap(self, rhs, |x, y| x + y)
     }
 }
@@ -323,15 +333,18 @@ impl<const N: usize, F: Float> Sub<Point<N, F>> for Point<N, F> {
     }
 }
 
-impl<const N:usize, F: Float> AddAssign<Point<N, F>> for Point<N,F> {
-    fn add_assign(&mut self, rhs: Point<N,F>) {
+impl<const N: usize, F: Float> AddAssign<Point<N, F>> for Point<N, F> {
+    fn add_assign(&mut self, rhs: Point<N, F>) {
         for i in 0..N {
-            self.vs[i]+=rhs.vs[i];
+            self.vs[i] += rhs.vs[i];
         }
     }
 }
 
-pub fn point_extrema<const N: usize, F: Float>(v: Option<Bounds<N,F>>, s: &Point<N,F>) -> Option<Bounds<N,F>> {
+pub fn point_extrema<const N: usize, F: Float>(
+    v: Option<Bounds<N, F>>,
+    s: &Point<N, F>,
+) -> Option<Bounds<N, F>> {
     if let Some(Bounds { mut min, mut max }) = v {
         min = Point::componentwise_min(min, *s);
         max = Point::componentwise_max(max, *s);

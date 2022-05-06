@@ -5,12 +5,12 @@ use super::point::Float;
 
 #[derive(Clone, Debug)]
 pub struct CubicBezierSegment<const N: usize, F> {
-    pub ps: [Point<N,F>; 4],
+    pub ps: [Point<N, F>; 4],
 }
 
-impl<const N: usize, F> CubicBezierSegment<N, F> 
+impl<const N: usize, F> CubicBezierSegment<N, F>
 where
-    F: Float
+    F: Float,
 {
     pub fn split(&self, t: F) -> (CubicBezierSegment<N, F>, CubicBezierSegment<N, F>) {
         let c2 = F::from_f64(2.0);
@@ -43,22 +43,21 @@ where
         )
     }
 
-    pub fn value(&self, t: F) -> Point<N,F> {
+    pub fn value(&self, t: F) -> Point<N, F> {
         let b = cubic_basis(t);
         self.ps[0] * b[0] + self.ps[1] * b[1] + self.ps[2] * b[2] + self.ps[3] * b[3]
-    }
     }
 }
 
 #[inline]
-pub fn cubic_basis<F: Float>(t:F) -> [F; 4] {
+pub fn cubic_basis<F: Float>(t: F) -> [F; 4] {
     let c3 = F::from_f64(3.0);
     let t2 = t * t;
     let t3 = t2 * t;
     let mt = F::one() - t;
     let mt2 = mt * mt;
     let mt3 = mt2 * mt;
-    [mt3, c3*mt2*t, c3*mt*t2, t3]
+    [mt3, c3 * mt2 * t, c3 * mt * t2, t3]
 }
 
 // Number of points should be 3*n+1 for some n

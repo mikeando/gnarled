@@ -3,7 +3,7 @@ use crate::nbase::point::Point;
 use crate::nbase::point::Float;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Bounds<const N: usize, F: Float=f32> {
+pub struct Bounds<const N: usize, F: Float = f32> {
     pub min: Point<N, F>,
     pub max: Point<N, F>,
 }
