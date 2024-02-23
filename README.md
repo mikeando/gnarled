@@ -5,9 +5,13 @@ an Axidraw pen plotter for producing interesting art.
 
 ## Example SVGs
 
+![drawing](sample_images/spiral.svg)
+
 Test for support of 3D primitives.
 
 ![drawing](sample_images/n3_02.svg)
+![drawing](sample_images/n3_01.svg)
+![drawing](sample_images/cube_layer.svg)
 
 Modified Seirpinski triangle
 
