@@ -80,7 +80,7 @@ impl<const N: usize, A> PolyLine<N, A> {
                         // Segment done.
                         let da = a - state.last_a;
                         let alpha = a / da;
-                        let pp = Point::lerp(alpha, state.last_p, *p);
+                        let pp = Point::lerp(1.0-alpha, state.last_p, *p);
                         seg.line.push(pp);
 
                         lines.push(PolyLine {
@@ -95,7 +95,7 @@ impl<const N: usize, A> PolyLine<N, A> {
                         // Start a new segment
                         let da = a - state.last_a;
                         let alpha = a / da;
-                        let pp = Point::lerp(alpha, state.last_p, *p);
+                        let pp = Point::lerp(1.0-alpha, state.last_p, *p);
                         let seg = OpenSegment {
                             line: vec![pp],
                             start_iz: (i - 1, alpha),
